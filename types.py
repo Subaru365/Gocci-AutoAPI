@@ -1,6 +1,35 @@
 
 
 
+#{
+#   "version": "3.1",
+#   "code": 100,
+#   "uri":"/v3/mobile/auth/signup",
+#   "identifier":"SUCCESS",
+#   "message": "successful api request",
+#   "payload:": 
+#   {
+#      "token":"eyJrfehfhwiehfwhfiw877ef7wf7w......"
+#   }
+#}
+API VERSION 		"version" 		"\d+\.\d+"
+API RESPONSE_CODE 	"code" 			"\d\d\d"
+API REQUESTED_URI 	"uri" 			"/[a-z/]+"
+API IDENTIFIER 		"identifier" 	"[A-Z_]+"
+API MESSAGE 		"message" 		"\w+"
+API PAYLOAD 		"payload" 		"valid_json"
+
+class URIToken:
+
+    def __init__(self, ver):
+        self.version = ver
+        self.response_code = None
+        self.requested_uri = None
+        self.identifier = None
+        self.message = None
+        self.payload = None
+
+
 class URIToken:
 
     def __init__(self, p):
