@@ -33,6 +33,11 @@ ERR 201 ERROR_SESSION_EXPIRED 	"Session cookie is not valid anymore"
 ERR 202 ERROR_CLIENT_OUTDATED 	"The client version is too old for this API. Client update necessary"
 
 
+ERR  CCSUCCESS 				"Successful api request"
+ERR  CCERROR_UNKNOWN 			"Unknown global error"
+ERR  CCERROR_SESSION_EXPIRED 	"Session cookie is not valid anymore"
+ERR  CCERROR_CLIENT_OUTDATED 	"The client version is too old for this API. Client update necessary"
+
 ############################################################################################
 URI /auth/signup
 ############################################################################################

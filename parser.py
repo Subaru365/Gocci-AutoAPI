@@ -24,7 +24,7 @@ def parseLineOrErrorOut(regex, line, emsg):
         if so:
             return so 
         else:
-            die(emsg + " does not correspond to regex: '"+r+"'\nFailed on Line: '" + line + "'")
+            die(emsg + " does not correspond to regex: '"+regex+"'\nFailed on Line: '" + line + "'")
 
 
 def parseUriLine(line):
@@ -40,15 +40,17 @@ def parseUriLine(line):
 
 def parseGlobalError(line):
     # with error code
-    so = parseLineOrErrorOut(r'^\w\w\w\s+(\d\d\d)\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
-    if so:
-        return ErrorToken(so.group(2), so.group(3), so.group(1))
-    # without optinal error code
-    so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
-    if so:
+
+    so = parseLineOrErrorOut(r'^\w\w\w\s+(\d\d\d)?\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
+    # print("MATCH 1: " + so.group(1) if so.group(1) else "NONE")
+    # print("MATCH 2: " + so.group(2) if so.group(2) else "NONE")
+    # print("MATCH 3: " + so.group(3) if so.group(3) else "NONE")
+    
+    # with custom error code
+    if so.group(1):
         return ErrorToken(so.group(2), so.group(3), so.group(1))
 
-    die("PARSING ERROR: Global Error does not correspond to regex\nFailed on Line: '" + line + "'")
+    return ErrorToken(so.group(2), so.group(3))
 
 
 
@@ -62,8 +64,7 @@ def parse(infile):
     # ignore all lines that do not start with API, URI, ERR, RES or PAR
     cleanContend = filterForLinesStartingWith(content, r'(VER|API|URI|ERR|RES|PAR)')
 
-    next_error_code = 100
-    error_codes = set()
+
     uris = []
     global_errors = []
     version_major = 0 
@@ -104,6 +105,21 @@ def parse(infile):
     for uri in uris:
         uri.autoGenerateMalformErrors()
         uri.setErrorCodesAscending()
+
+    # uniq error codes for every non set global error
+    next_error_code = 200
+    used_error_codes = set()
+    for gerror in global_errors:
+        if gerror.code:
+            used_error_codes.add(int(gerror.code))
+    for gerror in global_errors:
+        if gerror.code == None:
+            while next_error_code in used_error_codes:
+                next_error_code += 1
+            gerror.code = str(next_error_code)
+            used_error_codes.add(next_error_code)
+
+
 
     for ge in global_errors:
         print(ge)

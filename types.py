@@ -12,12 +12,12 @@
 #      "token":"eyJrfehfhwiehfwhfiw877ef7wf7w......"
 #   }
 #}
-API VERSION 		"version" 		"\d+\.\d+"
-API RESPONSE_CODE 	"code" 			"\d\d\d"
-API REQUESTED_URI 	"uri" 			"/[a-z/]+"
-API IDENTIFIER 		"identifier" 	"[A-Z_]+"
-API MESSAGE 		"message" 		"\w+"
-API PAYLOAD 		"payload" 		"valid_json"
+# API VERSION 		"version" 		"\d+\.\d+"
+# API RESPONSE_CODE 	"code" 			"\d\d\d"
+# API REQUESTED_URI 	"uri" 			"/[a-z/]+"
+# API IDENTIFIER 		"identifier" 	"[A-Z_]+"
+# API MESSAGE 		"message" 		"\w+"
+# API PAYLOAD 		"payload" 		"valid_json"
 
 class URIToken:
 
@@ -91,7 +91,7 @@ class ResponseToken:
         return "RESPONSE: " + self.key + " " + self.regex
 
 class ErrorToken:
-    def __init__(self, identifier, msg, ecode="0"):
+    def __init__(self, identifier, msg, ecode=None):
         self.identifier = identifier
         self.msg = msg
         self.code = ecode
