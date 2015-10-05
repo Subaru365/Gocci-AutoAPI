@@ -91,7 +91,7 @@ class ResponseToken:
         return "RESPONSE: " + self.key + " " + self.regex
 
 class ErrorToken:
-    def __init__(self, identifier, msg, ecode="0"):
+    def __init__(self, identifier, msg, ecode=None):
         self.identifier = identifier
         self.msg = msg
         self.code = ecode
