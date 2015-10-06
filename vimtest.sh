@@ -1,8 +1,8 @@
 #!/bin/bash
 
-TARGET="parser.py"
+TARGET="jidou"
 # PARAMETER="-s -j -p --swift --java --php input_FILE output_FILE"
-PARAMETER="--swift mobile_aaa.txt"
+PARAMETER="--swift mobile.aaa"
 INTERPRETER="python3.5"
 
 #########################################################################################################################

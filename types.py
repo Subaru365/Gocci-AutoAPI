@@ -1,31 +1,12 @@
 
 
 
-#{
-#   "version": "3.1",
-#   "code": 100,
-#   "uri":"/v3/mobile/auth/signup",
-#   "identifier":"SUCCESS",
-#   "message": "successful api request",
-#   "payload:": 
-#   {
-#      "token":"eyJrfehfhwiehfwhfiw877ef7wf7w......"
-#   }
-#}
-# API VERSION 		"version" 		"\d+\.\d+"
-# API RESPONSE_CODE 	"code" 			"\d\d\d"
-# API REQUESTED_URI 	"uri" 			"/[a-z/]+"
-# API IDENTIFIER 		"identifier" 	"[A-Z_]+"
-# API MESSAGE 		"message" 		"\w+"
-# API PAYLOAD 		"payload" 		"valid_json"
-
 class URIToken:
 
     def __init__(self, ver):
         self.version = ver
-        self.response_code = None
         self.requested_uri = None
-        self.identifier = None
+        self.code = None
         self.message = None
         self.payload = None
 
@@ -58,19 +39,17 @@ class URIToken:
 
     def autoGenerateMalformErrors(self):
         for p in self.parameters:
+            msg = "Parameter '"+ p.key +"' does not exist." 
+            self.errors.append(ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MISSING", msg))
+        for p in self.parameters:
             msg = "Parameter '"+ p.key +"' is malformed. Should correspond to '"+ p.regex +"'"
             self.errors.append(ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MALFORMED", msg))
         for r in self.responses:
+            msg = "Response '"+ r.key +"' was not received"
+            self.errors.append(ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MISSING", msg))
+        for r in self.responses:
             msg = "Response '"+ r.key +"' is malformed. Should correspond to '"+ r.regex +"'"
             self.errors.append(ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MALFORMED", msg))
-
-    def setErrorCodesAscending(self):
-        i = 300
-        for e in self.errors: 
-            e.setErrorCode(str(i))
-            i += 1
-            
-
 
 class ParameterToken:
     def __init__(self, key, re, tags=None):
@@ -91,16 +70,12 @@ class ResponseToken:
         return "RESPONSE: " + self.key + " " + self.regex
 
 class ErrorToken:
-    def __init__(self, identifier, msg, ecode=None):
-        self.identifier = identifier
+    def __init__(self, code, msg):
         self.msg = msg
-        self.code = ecode
-
-    def setErrorCode(self, c):
-        self.code = c
+        self.code = code
 
     def __str__(self):
-        return "ERROR: " + self.identifier +" "+ self.code +" "+ self.msg
+        return "ERROR: " + self.code +" "+ self.msg
 
 
 
