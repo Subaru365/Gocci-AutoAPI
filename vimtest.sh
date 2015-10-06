@@ -2,7 +2,7 @@
 
 TARGET="parser.py"
 # PARAMETER="-s -j -p --swift --java --php input_FILE output_FILE"
-PARAMETER="-s -j -p --swift --java --php"
+PARAMETER="--swift mobile_aaa.txt"
 INTERPRETER="python3.5"
 
 #########################################################################################################################

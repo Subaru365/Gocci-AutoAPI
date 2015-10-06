@@ -11,7 +11,7 @@ from util import *
 
 
 VERSION_MAJOR=3
-VERSION_MINOR=2
+VERSION_MINOR=3
 VERSION = str(VERSION_MAJOR) + "." + str(VERSION_MINOR)
 
 SourceTarget = Enum(["SWIFT", "JAVA", "PHP"])
@@ -81,7 +81,7 @@ def parse(infile):
             pass
 
         elif line.startswith("URI"):
-            so = parseLineOrErrorOut(r'URI\s+(/[a-z/]+)$', line, "PARSING ERROR: URI definition" )
+            so = parseLineOrErrorOut(r'URI\s+(/[a-z_/]+)$', line, "PARSING ERROR: URI definition" )
             uris.append(URIToken(so.group(1)))
             msg("Parsing URI: "+ so.group(1))
 
@@ -160,11 +160,13 @@ def main(argv):
             source_target=SourceTarget.PHP
 
     if not source_target:
-            usage()
-            sys.exit(2)
+        usage()
+        sys.exit(2)
 
-    input_filename = args[0] if len(arg) >= 1 else "api.aaa"
-    output_filename = args[1] if len(arg) >= 2 else "<STDOUT>"
+    print(args)
+
+    input_filename = args[0] if len(args) >= 1 else "api.aaa"
+    output_filename = args[1] if len(args) >= 2 else "<STDOUT>"
 
     msg("Generate source code in: " + source_target)
     msg("Input  file: " + input_filename )
