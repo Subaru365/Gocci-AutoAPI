@@ -1,0 +1,119 @@
+# AAA = Advanced API Abstraction
+
+# Version of the AAA file. Always increment this on chages relatet to SYNTAX, not if you add an URI or ERROR
+VER 3.3
+
+############################################################################################
+# First the description of the json API Baseframe.
+############################################################################################
+#{
+#   "version": "3.1",
+#   "code": 100,
+#   "uri":"/v3/mobile/auth/signup",
+#   "identifier":"SUCCESS",
+#   "message": "successful api request",
+#   "payload:":
+#   {
+#      "token":"eyJrfehfhwiehfwhfiw877ef7wf7w......"
+#   }
+#}
+API VERSION 		"version" 		"\d+\.\d+"
+API RESPONSE_CODE 	"code" 			"\d\d\d"
+API REQUESTED_URI 	"uri" 			"/[a-z/]+"
+API IDENTIFIER 		"identifier" 	"[A-Z_]+"
+API MESSAGE 		"message" 		"\w+"
+API PAYLOAD 		"payload" 		"valid_json"
+
+
+
+# Global error are defines before the first URI definition. Error number codes are optinal
+ERR 100 SUCCESS 				"Successful api request"
+ERR 200 ERROR_UNKNOWN 			"Unknown global error"
+ERR 201 ERROR_SESSION_EXPIRED 	"Session cookie is not valid anymore"
+ERR 202 ERROR_CLIENT_OUTDATED 	"The client version is too old for this API. Client update necessary"
+
+
+ERR  CCSUCCESS 					"Successful api request"
+ERR  CCERROR_UNKNOWN 			"Unknown global error"
+ERR  CCERROR_SESSION_EXPIRED 	"Session cookie is not valid anymore"
+ERR  CCERROR_CLIENT_OUTDATED 	"The client version is too old for this API. Client update necessary"
+
+############################################################################################
+URI /auth/signup
+############################################################################################
+PAR username 		"/^\w{4,20}$/"
+PAR os 				"/^android$|^iOS$/"
+PAR ver 			"/^[0-9]+$/"
+PAR model 			"/^[a-zA-Z0-9_-]{0,10}$/"
+PAR register_id 	"/^([a-f0-9]{64})|([a-zA-Z0-9:_-]{140,250})$/"
+############################################################################################
+RES user_id 		"/^[0-9]+$/"
+RES username 		"/^\w{4,20}$/"
+RES profile_img 	"/^http:\/\/imgs\.gocci\.me\/[0-9]+_[0-9]{4}(-[0-9]{2}){5}\.png$/"
+RES identity_id 	"/^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/"
+RES badge_num 		"/^[0-9]+$/"
+RES token 			"/^[a-zA-Z0-9.-_]{400,2200}$/"
+############################################################################################
+ERR ERROR_USERNAME_ALREADY_REGISTERD 	"The provided username was already registerd by another user"
+ERR ERROR_REGISTER_ID_ALREADY_REGISTERD "This deviced already has an registerd account"
+
+
+
+############################################################################################
+URI /auth/login
+############################################################################################
+PAR identity_id 	"/^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/"
+############################################################################################
+RES user_id 		"/^[0-9]+$/"
+RES username 		"/^\w{4,20}$/"
+RES profile_img 	"/^http:\/\/imgs\.gocci\.me\/[0-9]+_[0-9]{4}(-[0-9]{2}){5}\.png$/"
+RES identity_id 	"/^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/"
+RES badge_num 		"/^[0-9]+$/"
+RES token 			"/^[a-zA-Z0-9.-_]{400,2200}$/"
+############################################################################################
+ERR ERROR_IDENTITY_ID_NOT_REGISTERD "The provided identity_id is not bound to any account"
+
+
+
+############################################################################################
+URI /auth/sns_login
+############################################################################################
+PAR identity_id 	"/^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/"
+PAR os 				"/^android$|^iOS$/"
+PAR ver 			"/^[0-9]+$/"
+PAR model 			"/^[a-zA-Z0-9_-]{0,10}$/"
+PAR register_id		"/^([a-f0-9]{64})|([a-zA-Z0-9:_-]{140,250})$/"
+############################################################################################
+RES user_id 		"/^[0-9]+$/"
+RES username 		"/^\w{4,20}$/"
+RES profile_img 	"/^http:\/\/imgs\.gocci\.me\/[0-9]+_[0-9]{4}(-[0-9]{2}){5}\.png$/"
+RES identity_id 	"/^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/"
+RES badge_num 		"/^[0-9]+$/"
+RES token 			"/^[a-zA-Z0-9.-_]{400,2200}$/"
+############################################################################################
+ERR ERROR_IDENTITY_ID_NOT_REGISTERD "The provided identity_id is not bound to any account"
+ERR ERROR_REGISTER_ID_ALREADY_REGISTERD "This deviced already has an registerd other account"
+
+
+
+############################################################################################
+URI /auth/pass_login
+############################################################################################
+PAR username 		"/^\w{4,20}$/"
+PAR pass 			"/^\w{6,25}$/"
+PAR os 				"/^android$|^iOS$/"
+PAR ver 			"/^[0-9]+$/"
+PAR model 			"/^[a-zA-Z0-9_-]{0,10}$/"
+PAR register_id		"/^([a-f0-9]{64})|([a-zA-Z0-9:_-]{140,250})$/"
+############################################################################################
+RES user_id 		"/^[0-9]+$/"
+RES username 		"/^\w{4,20}$/"
+RES profile_img 	"/^http:\/\/imgs\.gocci\.me\/[0-9]+_[0-9]{4}(-[0-9]{2}){5}\.png$/"
+RES identity_id 	"/^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/"
+RES badge_num 		"/^[0-9]+$/"
+RES token 			"/^[a-zA-Z0-9.-_]{400,2200}$/"
+############################################################################################
+ERR ERROR_USERNAME_NOT_REGISTERD "?"
+ERR ERROR_PASSWORD_NOT_REGISTERD "?"
+ERR ERROR_REGISTER_ID_ALREADY_REGISTERD "This deviced already has an registerd other account"
+
