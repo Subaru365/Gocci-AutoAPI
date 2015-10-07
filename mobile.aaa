@@ -1,7 +1,7 @@
 # AAA = Advanced API Abstraction
 
 # Version of the AAA file. Always increment this on chages relatet to SYNTAX, not if you add an URI or ERROR
-VER 3.3
+VER 3.4
 
 ############################################################################################
 # First the description of the json API Baseframe.
@@ -117,3 +117,26 @@ ERR ERROR_USERNAME_NOT_REGISTERD "The entered username does not exist"
 ERR ERROR_PASSWORD_WRONG "Password wrong"
 ERR ERROR_REGISTER_ID_ALREADY_REGISTERD "This deviced already has an registerd other account"
 
+
+############################################################################################
+URI /get/timeline
+############################################################################################
+PAR call		    "^\d+$"
+############################################################################################
+RES ARRAY timeline_entries
+    RES latitude 		"^\d{1,3}\.\d{1,20}$"
+    RES longitude 		"^\d{1,3}\.\d{1,20}$"
+    RES ARRAY cherry
+        RES latitude 		"^\d{1,3}\.\d{1,20}$"
+        RES longitude 		"^\d{1,3}\.\d{1,20}$"
+        RES ARRAY apple
+            RES latitude 		"^\d{1,3}\.\d{1,20}$"
+            RES longitude 		"^\d{1,3}\.\d{1,20}$"
+            RES ARRAY apple
+                RES latitude 		"^\d{1,3}\.\d{1,20}$"
+                RES longitude 		"^\d{1,3}\.\d{1,20}$"
+            RES ARRAY END
+        RES ARRAY END
+    RES ARRAY END
+RES ARRAY END
+############################################################################################

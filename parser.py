@@ -41,6 +41,21 @@ def parseBaseFrameLine(line, baseframe):
     baseframe.addPair(so.group(1), so.group(2))
 
 
+def parseResponseArray(line, iterator, level=1):
+    arrayname = parseLineOrErrorOut(r'^RES\s+ARRAY\s+([a-z_]+)$', line, "PARSING ERROR: RES ARRAY Response").group(1)
+    res = ResponseArrayToken(arrayname, level)
+    for nextline in iterator:
+        msg(nextline)
+        if nextline.startswith("RES ARRAY END"):
+            return res
+        elif nextline.startswith("RES ARRAY"):
+            res.add(parseResponseArray(nextline, iterator, level+1))
+        elif nextline.startswith("RES"):
+            res.add(parseUriLine(nextline))
+        else:
+            die("PARSING ERROR: Only RES and RES ARRAY definitions are allowed in array space\nERROR Line: " + line)
+    die("PARSING ERROR: Array definition did not end in 'RES ARRAY END'\nERROR Line: " + line)
+
 
 # VERY tolerant, lenient, idiotic parser. We could do this more serious one day, with real token tree + error msgs
 # but it is not really nesseccry now. Just keep in mind this is not a "real" parser...
@@ -50,14 +65,19 @@ def parse(infile, vmajor, vminor):
 
 
     # ignore all lines that do not start with API, URI, ERR, RES or PAR
-    cleanContend = filterForLinesStartingWith(content, r'(VER|API|URI|ERR|RES|PAR)')
-
+    cleanContend = filterForLinesStartingWith(content, r'\s*(VER|API|URI|ERR|RES|PAR)')
+    
+    for l in cleanContend:
+        print(l)
 
     uris = []
     global_errors = []
     baseframe = BaseFrame()
 
-    for line in cleanContend:
+    lineiterator = iter(cleanContend)
+
+    for line in lineiterator:
+
         if line.startswith("VER"):
             so = parseLineOrErrorOut(r'VER\s+(\d+)\.(\d+)$', line, "PARSING ERROR: VER Version definition" )
             if vmajor < int(so.group(1)) or ( vmajor == int(so.group(1)) and vminor < int(so.group(2))):
@@ -69,6 +89,9 @@ def parse(infile, vmajor, vminor):
 
         elif line.startswith("URI"):
             so = parseLineOrErrorOut(r'URI\s+(/[a-z_/]+)$', line, "PARSING ERROR: URI definition" )
+            for uri in uris:
+                if uri.path == so.group(1):
+                    die("PARSING ERROR: URI with path '" + so.group(1) + "' was already difined. You made a copy and paste error :)")
             uris.append(URIToken(so.group(1)))
             msg("Parsing URI: "+ so.group(1))
 
@@ -80,7 +103,11 @@ def parse(infile, vmajor, vminor):
         elif line.startswith("RES"):
             if not uris :
                 die("PARSING ERROR: No response definitions in global space allowed. (define them in an URI space)\nERROR Line: " + line)
-            uris[-1].addResponse(parseUriLine(line))
+            if line.startswith("RES ARRAY"):
+                # uris[-1].addResponse(parseResponseArray(line, lineiterator))
+                print(parseResponseArray(line, lineiterator))
+            else:
+                uris[-1].addResponse(parseUriLine(line))
         elif line.startswith("ERR"):
             if not uris :
                 # global erros

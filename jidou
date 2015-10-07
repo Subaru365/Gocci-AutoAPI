@@ -11,25 +11,27 @@ from types import Enum
 SourceTarget = Enum(["SWIFT", "JAVA", "PHP"])
 
 VERSION_MAJOR=3
-VERSION_MINOR=3
+VERSION_MINOR=4
 VERSION = str(VERSION_MAJOR) + "." + str(VERSION_MINOR)
 
 
 
 def usage():                         
-    msg("Usage:\n\tparser.py [--help] [--swift | --java | --php] [input] [output]")
+    msg("Usage:\n\tparser.py [--validate] | [--help] [--swift | --java | --php] [input] [output]")
     msg("\n\tOne and only one source format has to be defined.")
+    msg("\n\tUse --validate to check the AAA file for syntax errors")
     msg("\tDefault input  filename: mobile.aaa")
     msg("\tDefault output filename: <stdout>")
 
 def main(argv):                         
     try:
-        opts, args = getopt.getopt(argv, "sjph", ["swift", "java", "php", "help"])
+        opts, args = getopt.getopt(argv, "sjphv", ["swift", "java", "php", "help", "validate"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
 
-    source_target=None
+    source_target = None 
+    validation_only = False
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
@@ -41,13 +43,22 @@ def main(argv):
             source_target=SourceTarget.JAVA
         elif opt in ("-p", "--php"):
             source_target=SourceTarget.PHP
+        elif opt in ("-v", "--validate"):
+            validation_only = True
 
-    if not source_target:
+    if not source_target and not validation_only:
         usage()
         sys.exit(2)
 
     input_filename = args[0] if len(args) >= 1 else "mobile.aaa"
     output_filename = args[1] if len(args) >= 2 else "<STDOUT>"
+
+    if validation_only:
+        msg("Parsing...")
+        parser.parse(input_filename, VERSION_MAJOR, VERSION_MINOR)
+        msg("Looks wunderful :)")
+        sys.exit(0)
+
 
     msg("Generate source code in: " + source_target)
     msg("Input  file: " + input_filename )

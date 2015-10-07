@@ -21,7 +21,12 @@ def generate(everything):
         for e in ut.errors:
             allerros[e.code] = stringify(e.msg)
 
-    swift_allErrorsAsEnum = generateEnum("Code", allerros.keys())
+    allcodes = list(allerros.keys())
+    allcodes.sort(reverse=True)
+
+    swift_allErrorsAsEnum = generateEnum("Code", allcodes)
+
+    swift_codeReverseLookUpTable = generateCodeReverseLookUpTable("codeReverseLookUpTable", allcodes)
 
     swift_allErrorMessages = generateErrorMsgTable("msgTable", allerros.items())
 
@@ -42,9 +47,11 @@ def generate(everything):
 
     res = ""
     res += swift_allErrorsAsEnum + "\n\n"
+    res += swift_codeReverseLookUpTable + "\n\n"
     res += swift_allErrorMessages + "\n\n"
     res += swift_parameterValidationLookUpTable + "\n\n"
     res += swift_allParameterValidationFunctions 
+
     return wrapInClass("API", res)
 
 
@@ -77,6 +84,11 @@ def generateErrorMsgTable(varname, errorTupels):
         res += "\n    API.Code."+ k +": "+ v +","
     return res + "\n]"
 
+def generateCodeReverseLookUpTable(varname, codes):
+    res = "static let "+ varname +": [String: API.Code] = ["
+    for c in codes:
+        res += "\n    "+ stringify(c) +": API.Code."+ c +","
+    return res + "\n]"
 
 def generateParameterValidationFunctionLookUpTable(tablename, uri_functionname_tupels):
     res = "static let "+ tablename +": [String: ([String: String]) -> API.Code] = ["

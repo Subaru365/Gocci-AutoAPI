@@ -86,6 +86,22 @@ class ResponseToken:
     def __str__(self):
         return "RESPONSE: " + self.key + " " + self.regex
 
+class ResponseArrayToken:
+    def __init__(self, key, level, itemcount = -1):
+        self.key = key
+        self.itemcount = itemcount
+        self.leafes = []
+        self.identlevel = level
+
+    def add(self, a):
+        self.leafes.append(a)
+
+    def __str__(self):
+        res = "ARRAY " + self.key + ":"
+        for r in self.leafes:
+            res += "\n"+ ("    "*self.identlevel) + str(r)
+        return res
+
 class ErrorToken:
     def __init__(self, code, msg):
         self.msg = msg
