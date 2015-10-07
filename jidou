@@ -1,0 +1,74 @@
+#!/usr/bin/env python3.5
+
+import parser
+import swift
+import sys
+import getopt
+from util import msg
+from types import Enum
+
+
+SourceTarget = Enum(["SWIFT", "JAVA", "PHP"])
+
+VERSION_MAJOR=3
+VERSION_MINOR=3
+VERSION = str(VERSION_MAJOR) + "." + str(VERSION_MINOR)
+
+
+
+def usage():                         
+    msg("Usage:\n\tparser.py [--help] [--swift | --java | --php] [input] [output]")
+    msg("\n\tOne and only one source format has to be defined.")
+    msg("\tDefault input  filename: mobile.aaa")
+    msg("\tDefault output filename: <stdout>")
+
+def main(argv):                         
+    try:
+        opts, args = getopt.getopt(argv, "sjph", ["swift", "java", "php", "help"])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+
+    source_target=None
+
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif opt in ("-s", "--swift"):
+            source_target=SourceTarget.SWIFT
+        elif opt in ("-j", "--java"):
+            source_target=SourceTarget.JAVA
+        elif opt in ("-p", "--php"):
+            source_target=SourceTarget.PHP
+
+    if not source_target:
+        usage()
+        sys.exit(2)
+
+    input_filename = args[0] if len(args) >= 1 else "mobile.aaa"
+    output_filename = args[1] if len(args) >= 2 else "<STDOUT>"
+
+    msg("Generate source code in: " + source_target)
+    msg("Input  file: " + input_filename )
+    msg("Output file: " + output_filename + "\n\n")
+
+    token_tree = parser.parse(input_filename, VERSION_MAJOR, VERSION_MINOR)
+
+    if source_target == SourceTarget.SWIFT:
+        source = swift.generate(token_tree)
+    # elif source_target == SourceTarget.JAVA:
+        # source = generate_java(token_tree)
+    # elif source_target == SourceTarget.PHP
+        # source = generate_php(token_tree)
+
+    if output_filename == "<STDOUT>":
+        print(source)
+    else:
+        with open(output_filename, 'w') as out:
+            out.write(source + '\n')
+
+
+if __name__ == "__main__":
+    msg("Automatic API interface class generator. (Version: " + VERSION + ")")
+    main(sys.argv[1:])
