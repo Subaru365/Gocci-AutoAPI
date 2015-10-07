@@ -1,14 +1,28 @@
 
 
 
-class URIToken:
+class Everything:
+    def __init__(self, bf, ge, uris):
+        self.baseframe = bf
+        self.globalErrors = ge
+        self.uriTokens = uris
 
-    def __init__(self, ver):
-        self.version = ver
-        self.requested_uri = None
-        self.code = None
-        self.message = None
-        self.payload = None
+class BaseFrame:
+
+    def __init__(self):
+        self.validation_pairs = dict()
+
+    def addPair(self, key, value):
+        self.validation_pairs[key] = value
+
+    def getPairs(self):
+        return validation_pairs
+
+    def __str__(self):
+        res =  "API BASEFRAME:"
+        for k,v in self.validation_pairs.items():
+            res += "\n\t{}:\t{}".format(k,v)
+        return res
 
 
 class URIToken:
@@ -28,6 +42,9 @@ class URIToken:
         for x in self.errors:
             res += ("\n    " + str(x))
         return res
+
+    def normalizedKey(self):
+        return self.path.replace('/', '__')
 
     def addError(self, x):
         self.errors.append(x)

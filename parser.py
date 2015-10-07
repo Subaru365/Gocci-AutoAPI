@@ -36,6 +36,10 @@ def parseGlobalError(line):
     so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
     return ErrorToken(so.group(1), so.group(2))
 
+def parseBaseFrameLine(line, baseframe):
+    so = parseLineOrErrorOut(r'^API\s+"([a-z_]+)"\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
+    baseframe.addPair(so.group(1), so.group(2))
+
 
 
 # VERY tolerant, lenient, idiotic parser. We could do this more serious one day, with real token tree + error msgs
@@ -51,6 +55,7 @@ def parse(infile, vmajor, vminor):
 
     uris = []
     global_errors = []
+    baseframe = BaseFrame()
 
     for line in cleanContend:
         if line.startswith("VER"):
@@ -60,7 +65,7 @@ def parse(infile, vmajor, vminor):
             else:
                 msg("AAA File version: " + so.group(1) +"."+ so.group(2))
         elif line.startswith("API"):
-            pass
+            parseBaseFrameLine(line, baseframe)
 
         elif line.startswith("URI"):
             so = parseLineOrErrorOut(r'URI\s+(/[a-z_/]+)$', line, "PARSING ERROR: URI definition" )
@@ -87,11 +92,7 @@ def parse(infile, vmajor, vminor):
     for uri in uris:
         uri.autoGenerateMalformErrors()
 
-    for ge in global_errors:
-        print(ge)
-
-    for uri in uris:
-        print(uri)
+    return Everything(baseframe, global_errors, uris)
 
 
 
