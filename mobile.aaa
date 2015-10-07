@@ -7,20 +7,20 @@ VER 3.3
 # First the description of the json API Baseframe.
 ############################################################################################
 #{
-#   "version": "3.1",
-#   "uri":"v3/mobile/auth/signup",
-#   "code":"SUCCESS",
-#   "message": "successful api request",
-#   "payload:":
+#   "api_version": "3.1",
+#   "api_uri": "/auth/signup",
+#   "api_code": "SUCCESS",
+#   "api_message": "Successful API request",
+#   "api_payload:":
 #   {
 #      "token":"eyJrfehfhwiehfwhfiw877ef7wf7w......"
 #   }
 #}
-API  "version" 		"\d+\.\d+"
-API  "uri" 			"[a-z/_]+"
-API  "code" 		"(SUCCESS)|(ERROR_[A-Z_]+)"
-API  "message" 		"\w+"
-API  "payload" 		"valid_json"
+API  "api_version" 		"\d+\.\d+"
+API  "api_uri" 			"[a-z/_]+"
+API  "api_code" 		"(SUCCESS)|(ERROR_[A-Z_]+)"
+API  "api_message" 		"\w+"
+API  "api_payload" 		"valid_json"
 
 
 ############################################################################################
