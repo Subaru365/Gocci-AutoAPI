@@ -2,6 +2,7 @@
 # Lib imports
 import sys
 import re
+import itertools
 
 # Own imports
 from types import *
@@ -11,6 +12,12 @@ from util import *
 
 
 
+def filterForLinesStartingWith(dirtyContend, filterRegEx):
+    res = []
+    for line in dirtyContend:
+        if re.match(filterRegEx, line):
+            res.append(line.strip())
+    return res
 
 
 def parseLineOrErrorOut(regex, line, emsg):
@@ -25,9 +32,9 @@ def parseUriLine(line):
     if line.startswith("PAR"):
         so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: PAR Parameter")
         return ParameterToken(so.group(1), so.group(2))
-    elif line.startswith("RES"):
-        so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
-        return ResponseToken(so.group(1), so.group(2))
+    # elif line.startswith("RES"):
+        # so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
+        # return ResponseToken(so.group(1), so.group(2))
     elif line.startswith("ERR"):
         so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
         return ErrorToken(so.group(1), so.group(2))
@@ -41,20 +48,70 @@ def parseBaseFrameLine(line, baseframe):
     baseframe.addPair(so.group(1), so.group(2))
 
 
-def parseResponseArray(line, iterator, level=1):
-    arrayname = parseLineOrErrorOut(r'^RES\s+ARRAY\s+([a-z_]+)$', line, "PARSING ERROR: RES ARRAY Response").group(1)
-    res = ResponseArrayToken(arrayname, level)
+def parseResponseLine(firstline, lineiterator, level=1):
+    if firstline.startswith("RES ARRAY"):
+        return parseResponseArrayPre(firstline, lineiterator, level)
+    if firstline.startswith("RES DICT"):
+        return parseResponseDictonary(firstline, lineiterator, level)
+    elif firstline.startswith("RES"):
+        so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+"(.+)"$', firstline, "PARSING ERROR: RES Response")
+        return ResponseToken(so.group(1), so.group(2))
+    else:
+        die("PARSING ERROR: Response parsing failed on deepest level. This is not valid:\nERROR Line: " + firstline)
+
+def parseResponseArray(line):
+    so = parseLineOrErrorOut(r'^RES\s+ARRAY\s+OF\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
+    return ResponseArrayToken(so.group(1), so.group(2))
+
+def parseResponseArrayCompound(firstline, iterator, level=1):
+    arrayname = parseLineOrErrorOut(r'^RES\s+ARRAY\s+([a-z_]+)$', firstline, "PARSING ERROR: RES ARRAY Response").group(1)
+    res = ResponseArrayCompoundToken(arrayname, level)
     for nextline in iterator:
-        msg(nextline)
         if nextline.startswith("RES ARRAY END"):
             return res
         elif nextline.startswith("RES ARRAY"):
-            res.add(parseResponseArray(nextline, iterator, level+1))
+            res.add(parseResponseArrayCompound(nextline, iterator, level+1))
         elif nextline.startswith("RES"):
-            res.add(parseUriLine(nextline))
+            res.add(parseResponseLine(nextline, iterator, level))
         else:
-            die("PARSING ERROR: Only RES and RES ARRAY definitions are allowed in array space\nERROR Line: " + line)
-    die("PARSING ERROR: Array definition did not end in 'RES ARRAY END'\nERROR Line: " + line)
+            die("PARSING ERROR: Only RES and RES ARRAY definitions are allowed in an array space\nERROR Line: " + nextline)
+    die("PARSING ERROR: Array definition did not end in 'RES ARRAY END'\nERROR Line: " + firstline)
+
+
+def parseResponseArrayPre(firstline, lineiter, level=1):
+    if firstline.startswith("RES ARRAY END"):
+        die("PARSING ERROR: JESUS!? Don't mix array and dict definitions. Do you want json like: [ { ] } or what?\nERROR Line: " + firstline)
+    elif firstline.startswith("RES ARRAY OF"):
+        return parseResponseArray(firstline)
+    else:
+        return parseResponseArrayCompound(firstline, lineiter, level)
+
+def parseResponseDictonary(firstline, iterator, level=1):
+    dictname = parseLineOrErrorOut(r'^RES\s+DICT\s+([a-z_]+)$', firstline, "PARSING ERROR: RES DICT Response").group(1)
+    res = ResponseDictonaryToken(dictname, level)
+    for line in iterator:
+        if line.startswith("RES DICT END"):
+            return res
+        elif line.startswith("RES DICT"):
+            res.add(parseResponseDictonary(line, iterator, level+1))
+        elif line.startswith("RES ARRAY"):
+            res.add(parseResponseArrayPre(line, iterator))
+        elif line.startswith("RES"):
+            res.add(parseResponseLine(line, iterator, level))
+        else:
+            die("PARSING ERROR: Only RES definitions are allowed in a dictonary space\nERROR Line: " + line)
+    die("PARSING ERROR: Dictonary definition did not end in 'RES DICT END'\nERROR Line: " + firstline)
+
+# yes this is a little bit hacky 
+def parseResponseDictonaryTopLevel(allLines):
+    toparse = []
+    while len(allLines) != 0:
+        if allLines[-1].startswith("RES"):
+            toparse.append(allLines.pop())
+        else:
+            break
+    toparse.append("RES DICT END")
+    return parseResponseDictonary("RES DICT payload", iter(toparse))
 
 
 # VERY tolerant, lenient, idiotic parser. We could do this more serious one day, with real token tree + error msgs
@@ -64,19 +121,17 @@ def parse(infile, vmajor, vminor):
         content = f.readlines()
 
 
-    # ignore all lines that do not start with API, URI, ERR, RES or PAR
+    # ignore all lines that do not start with VER, API, URI, ERR, RES or PAR
     cleanContend = filterForLinesStartingWith(content, r'\s*(VER|API|URI|ERR|RES|PAR)')
-    
-    for l in cleanContend:
-        print(l)
 
+    cleanContend = list(reversed(cleanContend))
+    
     uris = []
     global_errors = []
     baseframe = BaseFrame()
 
-    lineiterator = iter(cleanContend)
-
-    for line in lineiterator:
+    while not len(cleanContend) == 0:
+        line = cleanContend.pop()
 
         if line.startswith("VER"):
             so = parseLineOrErrorOut(r'VER\s+(\d+)\.(\d+)$', line, "PARSING ERROR: VER Version definition" )
@@ -103,11 +158,10 @@ def parse(infile, vmajor, vminor):
         elif line.startswith("RES"):
             if not uris :
                 die("PARSING ERROR: No response definitions in global space allowed. (define them in an URI space)\nERROR Line: " + line)
-            if line.startswith("RES ARRAY"):
-                # uris[-1].addResponse(parseResponseArray(line, lineiterator))
-                print(parseResponseArray(line, lineiterator))
-            else:
-                uris[-1].addResponse(parseUriLine(line))
+
+            cleanContend.append(line)
+            uris[-1].addResponse(parseResponseDictonaryTopLevel(cleanContend))
+
         elif line.startswith("ERR"):
             if not uris :
                 # global erros

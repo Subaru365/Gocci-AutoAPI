@@ -2,7 +2,8 @@
 
 TARGET="jidou"
 # PARAMETER="-s -j -p --swift --java --php input_FILE output_FILE"
-PARAMETER="--validate mobile.aaa"
+# PARAMETER="--json syntaxtest.aaa"
+PARAMETER="--swift mobile.aaa"
 INTERPRETER="python3.5"
 
 #########################################################################################################################

@@ -1,0 +1,134 @@
+# AAA = Advanced API Abstraction
+
+VER 3.5
+
+
+
+# ############################################################################################
+# URI /test/noparameter
+# RES latitude 		"^\d{1,3}\.\d{1,20}$"
+# ############################################################################################
+
+# ############################################################################################
+# URI /test/noresponse
+# PAR call		    "^\d+$"
+# ############################################################################################
+
+# ############################################################################################
+# URI /test/nothingatall
+# ############################################################################################
+
+
+############################################################################################
+URI /test/singletypearray
+############################################################################################
+RES kiwi 		    "^\d{1,3}\.\d{1,20}$"
+RES melon 		    "^\d{1,3}\.\d{1,20}$"
+RES ARRAY OF momo   "^\d{1,3}\.\d{1,20}$"
+
+
+############################################################################################
+URI /test/dict
+############################################################################################
+RES kiwi 		    "^\d{1,3}\.\d{1,20}$"
+RES melon 		    "^\d{1,3}\.\d{1,20}$"
+RES DICT sweet_outer
+    RES grape 		    "^\d{1,3}\.\d{1,20}$"
+    RES nashi_a		    "^\d{1,3}\.\d{1,20}$"
+    RES ARRAY OF momo   "^\d{1,3}\.\d{1,20}$"
+    RES DICT sweet_middel
+        RES grape 		    "^\d{1,3}\.\d{1,20}$"
+        RES nashi_b		    "^\d{1,3}\.\d{1,20}$"
+        RES ARRAY OF momo   "^\d{1,3}\.\d{1,20}$"
+        RES DICT sweet_inner
+            RES grape 		    "^\d{1,3}\.\d{1,20}$"
+            RES nashi_c		    "^\d{1,3}\.\d{1,20}$"
+            RES ARRAY OF momo   "^\d{1,3}\.\d{1,20}$"
+        RES DICT END
+    RES DICT END
+RES DICT END
+
+############################################################################################
+URI /test/multilevelarray
+############################################################################################
+PAR call		    "^\d+$"
+############################################################################################
+RES ARRAY timeline_entries
+    RES latitude 		"^\d{1,3}\.\d{1,20}$"
+    RES longitude_a 		"^\d{1,3}\.\d{1,20}$"
+    RES ARRAY cherry
+        RES latitude 		"^\d{1,3}\.\d{1,20}$"
+        RES longitude_b 		"^\d{1,3}\.\d{1,20}$"
+        RES ARRAY grape
+            RES latitude 		"^\d{1,3}\.\d{1,20}$"
+            RES longitude_c 		"^\d{1,3}\.\d{1,20}$"
+            RES ARRAY apple
+                RES latitude 		"^\d{1,3}\.\d{1,20}$"
+                RES longitude_d 		"^\d{1,3}\.\d{1,20}$"
+                RES heiliger 		"^\d{1,3}\.\d{1,20}$"
+            RES ARRAY END
+        RES ARRAY END
+    RES ARRAY END
+RES ARRAY END
+############################################################################################
+
+
+############################################################################################
+URI /test/arienaikoto
+############################################################################################
+PAR call		    "^\d+$"
+############################################################################################
+RES ARRAY timeline_entries
+    RES latitude 		"^\d{1,3}\.\d{1,20}$"
+    RES longitude_a 		"^\d{1,3}\.\d{1,20}$"
+    RES ARRAY cherry
+        RES latitude 		"^\d{1,3}\.\d{1,20}$"
+        RES longitude_b 		"^\d{1,3}\.\d{1,20}$"
+        RES ARRAY grape
+            RES latitude 		"^\d{1,3}\.\d{1,20}$"
+            RES longitude_c 		"^\d{1,3}\.\d{1,20}$"
+            RES ARRAY apple
+RES ARRAY timeline_entries
+    RES latitude 		"^\d{1,3}\.\d{1,20}$"
+    RES longitude_a 		"^\d{1,3}\.\d{1,20}$"
+    RES ARRAY cherry
+        RES latitude 		"^\d{1,3}\.\d{1,20}$"
+        RES longitude_b 		"^\d{1,3}\.\d{1,20}$"
+        RES ARRAY grape
+            RES latitude 		"^\d{1,3}\.\d{1,20}$"
+RES kiwi 		    "^\d{1,3}\.\d{1,20}$"
+RES melon 		    "^\d{1,3}\.\d{1,20}$"
+RES DICT sweet_outer
+    RES grape 		    "^\d{1,3}\.\d{1,20}$"
+    RES nashi_a		    "^\d{1,3}\.\d{1,20}$"
+    RES ARRAY OF momo   "^\d{1,3}\.\d{1,20}$"
+    RES DICT sweet_middel
+        RES grape 		    "^\d{1,3}\.\d{1,20}$"
+        RES nashi_b		    "^\d{1,3}\.\d{1,20}$"
+        RES ARRAY OF momo   "^\d{1,3}\.\d{1,20}$"
+        RES DICT sweet_inner
+            RES grape 		    "^\d{1,3}\.\d{1,20}$"
+            RES nashi_c		    "^\d{1,3}\.\d{1,20}$"
+            RES ARRAY OF momo   "^\d{1,3}\.\d{1,20}$"
+        RES DICT END
+    RES DICT END
+RES DICT END
+
+
+            RES longitude_c 		"^\d{1,3}\.\d{1,20}$"
+            RES ARRAY apple
+                RES latitude 		"^\d{1,3}\.\d{1,20}$"
+                RES longitude_d 		"^\d{1,3}\.\d{1,20}$"
+                RES heiliger 		"^\d{1,3}\.\d{1,20}$"
+            RES ARRAY END
+        RES ARRAY END
+    RES ARRAY END
+RES ARRAY END
+                RES latitude 		"^\d{1,3}\.\d{1,20}$"
+                RES longitude_d 		"^\d{1,3}\.\d{1,20}$"
+                RES heiliger 		"^\d{1,3}\.\d{1,20}$"
+            RES ARRAY END
+        RES ARRAY END
+    RES ARRAY END
+RES ARRAY END
+############################################################################################

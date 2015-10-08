@@ -2,16 +2,18 @@
 
 import types
 import textwrap
+from util import *
 
 def generate(everything):
 
-    # prepare for Swift
+
+    def forEachLeaf(resp):
+        resp.regex = regexify(resp.regex)
 
     for uri in everything.uriTokens:
         for para in uri.parameters:
             para.regex = regexify(para.regex)
-        for resp in uri.responses:
-            resp.regex = regexify(resp.regex)
+        uri.responses.recursive_traverse(forEachLeaf, lambda x:x)
 
     allerros = dict()
 
@@ -52,22 +54,14 @@ def generate(everything):
     res += swift_parameterValidationLookUpTable + "\n\n"
     res += swift_allParameterValidationFunctions 
 
-    return wrapInClass("API", res)
+    # return wrapInClass("API", res)
+    return swift_allErrorsAsEnum 
 
 
 
 
 
 
-def stringify(code):
-    return "\"" + code.replace('\\', '\\\\') + "\""
-
-def regexify(code):
-    return stringify(code.replace('\\', '\\\\')) 
-
-
-def ident(code):
-    return "    " + code.replace('\n', '\n    ')
 
 def wrapInClass(classname, code):
     return "class {} {{\n{}\n}}".format(classname, ident(code))

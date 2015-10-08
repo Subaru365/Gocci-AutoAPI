@@ -2,6 +2,8 @@
 
 import sys
 import re
+import itertools
+import collections
 
 def die(m):
     msg(m)
@@ -10,9 +12,25 @@ def die(m):
 def msg(m):
     print(m, file=sys.stderr)
 
-def filterForLinesStartingWith(dirtyContend, filterRegEx):
-    res = []
-    for line in dirtyContend:
-        if re.match(filterRegEx, line):
-            res.append(line.strip())
-    return res
+
+class Peekorator(collections.Iterator):
+    def __init__(self, it):
+        self.it, self.nextit = itertools.tee(iter(it))
+        self._advance()
+    def _advance(self):
+        self.peek = next(self.nextit, None)
+    def __next__(self):
+        self._advance()
+        return next(self.it)
+
+def stringify(code):
+    return "\"" + code.replace('\\', '\\\\') + "\""
+
+def regexify(code):
+    return stringify(code.replace('\\', '\\\\')) 
+
+
+def ident(code):
+    return "    " + code.replace('\n', '\n    ')
+
+

@@ -1,23 +1,27 @@
 #!/usr/bin/env python3.5
 
 import parser
-import swift
 import sys
 import getopt
 from util import msg
 from types import Enum
 
+import swift
+import java
+import php
+import javascript
+import jsongen
 
-SourceTarget = Enum(["SWIFT", "JAVA", "PHP"])
+SourceTarget = Enum(["SWIFT", "JAVA", "PHP", "JS", "JSON"])
 
 VERSION_MAJOR=3
-VERSION_MINOR=4
+VERSION_MINOR=5
 VERSION = str(VERSION_MAJOR) + "." + str(VERSION_MINOR)
 
 
 
 def usage():                         
-    msg("Usage:\n\tparser.py [--validate] | [--help] [--swift | --java | --php] [input] [output]")
+    msg("Usage:\n\tparser.py [--validate] | [--help] [--swift | --java | --php | --javascript | --json] [input] [output]")
     msg("\n\tOne and only one source format has to be defined.")
     msg("\n\tUse --validate to check the AAA file for syntax errors")
     msg("\tDefault input  filename: mobile.aaa")
@@ -25,7 +29,7 @@ def usage():
 
 def main(argv):                         
     try:
-        opts, args = getopt.getopt(argv, "sjphv", ["swift", "java", "php", "help", "validate"])
+        opts, args = getopt.getopt(argv, "sjphvJX", ["swift", "java", "php", "help", "validate", "javascript", "json"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -43,6 +47,10 @@ def main(argv):
             source_target=SourceTarget.JAVA
         elif opt in ("-p", "--php"):
             source_target=SourceTarget.PHP
+        elif opt in ("-J", "--javascript"):
+            source_target=SourceTarget.JS
+        elif opt in ("-X", "--json"):
+            source_target=SourceTarget.JSON
         elif opt in ("-v", "--validate"):
             validation_only = True
 
@@ -68,10 +76,14 @@ def main(argv):
 
     if source_target == SourceTarget.SWIFT:
         source = swift.generate(token_tree)
+    elif source_target == SourceTarget.JSON:
+        source = jsongen.generate(token_tree)
     # elif source_target == SourceTarget.JAVA:
-        # source = generate_java(token_tree)
+        # source = java.generate(token_tree)
     # elif source_target == SourceTarget.PHP
-        # source = generate_php(token_tree)
+        # source = php.generate(token_tree)
+    # elif source_target == SourceTarget.JS
+        # source = javascript.generate(token_tree)
 
     if output_filename == "<STDOUT>":
         print(source)

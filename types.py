@@ -30,7 +30,7 @@ class URIToken:
     def __init__(self, p):
         self.path = p
         self.parameters = []
-        self.responses = []
+        self.responses = None
         self.errors = []
 
     def __str__(self):
@@ -51,22 +51,34 @@ class URIToken:
     def addParameter(self, x):
         self.parameters.append(x)
     def addResponse(self, x):
-        self.responses.append(x)
+        self.responses = x
 
+
+    def autoGenerateMalformErrorForOneParameter(self, p):
+        msg = "Parameter '"+ p.key +"' does not exist." 
+        self.errors.append(ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MISSING", msg))
+        msg = "Parameter '"+ p.key +"' is malformed. Should correspond to '"+ p.regex +"'"
+        self.errors.append(ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MALFORMED", msg))
+
+
+    def autoGenerateMalformErrorForOneResponse(self, r):
+        msg = "Response '"+ r.key +"' was not received"
+        self.errors.append(ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MISSING", msg))
+        msg = "Response '"+ r.key +"' is malformed. Should correspond to '"+ r.regex +"'"
+        self.errors.append(ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MALFORMED", msg))
+
+    def autoGenerateMalformErrorsForAllResponses(self, resps):
+        def onleaf(l):
+            self.autoGenerateMalformErrorForOneResponse(l)
+        def onarray(l):
+            self.autoGenerateMalformErrorForOneResponse(l)
+
+        resps.recursive_traverse(onleaf, onarray)
 
     def autoGenerateMalformErrors(self):
         for p in self.parameters:
-            msg = "Parameter '"+ p.key +"' does not exist." 
-            self.errors.append(ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MISSING", msg))
-        for p in self.parameters:
-            msg = "Parameter '"+ p.key +"' is malformed. Should correspond to '"+ p.regex +"'"
-            self.errors.append(ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MALFORMED", msg))
-        for r in self.responses:
-            msg = "Response '"+ r.key +"' was not received"
-            self.errors.append(ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MISSING", msg))
-        for r in self.responses:
-            msg = "Response '"+ r.key +"' is malformed. Should correspond to '"+ r.regex +"'"
-            self.errors.append(ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MALFORMED", msg))
+            self.autoGenerateMalformErrorForOneParameter(p)
+        self.autoGenerateMalformErrorsForAllResponses(self.responses)
 
 class ParameterToken:
     def __init__(self, key, re, tags=None):
@@ -77,17 +89,68 @@ class ParameterToken:
     def __str__(self):
         return "PARAMETER: " + self.key + " " + self.regex
 
+# TODO tags
 class ResponseToken:
-    def __init__(self, key, re, tags=None):
+    def __init__(self, key, re):
         self.key = key
         self.regex = re
-        # TODO tags
 
     def __str__(self):
         return "RESPONSE: " + self.key + " " + self.regex
 
+
 class ResponseArrayToken:
-    def __init__(self, key, level, itemcount = -1):
+    def __init__(self, key, re, itemcount=None):
+        self.key = key
+        self.regex = re
+        self.itemcount = itemcount
+
+    def __str__(self):
+        return "RESPONSE: ARRAY OF [" + self.key + "] " + self.regex
+
+class ResponseDictonaryToken:
+    def __init__(self, key, level):
+        self.key = key
+        self.leafes = []
+        self.identlevel = level
+
+    def add(self, a):
+        self.leafes.append(a)
+
+    def recursive_traverse(self, onleaf, onarray):
+        for resp in self.leafes:
+            if type(resp) is ResponseToken:
+                onleaf(resp)
+            elif type(resp) is ResponseArrayToken:
+                onarray(resp)
+            elif type(resp) is ResponseArrayCompoundToken:
+                resp.recursive_traverse(onleaf, onarray)
+            elif type(resp) is ResponseDictonaryToken:
+                resp.recursive_traverse(onleaf, onarray)
+
+    # def traverse(self, onleaf=lambda x:x, onarray=lambda x:x, onenterarray=lambda x:x, onleavearray=lambda x:x, onenterdict=lambda x:x, onleavedict=lambda x:x)
+    def traverse(self, onleaf=lambda x:x, onarray=lambda x:x, oncompoundarray=lambda x:x, ondict=lambda x:x):
+        for resp in self.leafes:
+            if type(resp) is ResponseToken:
+                onleaf(resp)
+            elif type(resp) is ResponseArrayToken:
+                onarray(resp)
+            elif type(resp) is ResponseArrayCompoundToken:
+                oncompoundarray(resp)
+            elif type(resp) is ResponseDictonaryToken:
+                ondict(resp)
+
+    def __iter__(self):
+        return iter(self.leafes)
+
+    def __str__(self):
+        res = "DICTONARY NAMED " + self.key + ":"
+        for r in self.leafes:
+            res += "\n"+ ("    "*self.identlevel) + str(r)
+        return res
+
+class ResponseArrayCompoundToken:
+    def __init__(self, key, level, itemcount = None):
         self.key = key
         self.itemcount = itemcount
         self.leafes = []
@@ -96,8 +159,33 @@ class ResponseArrayToken:
     def add(self, a):
         self.leafes.append(a)
 
+    def recursive_traverse(self, onleaf, onarray):
+        for resp in self.leafes:
+            if type(resp) is ResponseToken:
+                onleaf(resp)
+            elif type(resp) is ResponseArrayToken:
+                onarray(resp)
+            elif type(resp) is ResponseArrayCompoundToken:
+                resp.recursive_traverse(onleaf, onarray)
+            elif type(resp) is ResponseDictonaryToken:
+                resp.recursive_traverse(onleaf, onarray)
+
+    def traverse(self, onleaf=lambda x:x, onarray=lambda x:x, oncompoundarray=lambda x:x, ondict=lambda x:x):
+        for resp in self.leafes:
+            if type(resp) is ResponseToken:
+                onleaf(resp)
+            elif type(resp) is ResponseArrayToken:
+                onarray(resp)
+            elif type(resp) is ResponseArrayCompoundToken:
+                oncompoundarray(resp)
+            elif type(resp) is ResponseDictonaryToken:
+                ondict(resp)
+
+    def __iter__(self):
+        return iter(self.leafes)
+
     def __str__(self):
-        res = "ARRAY " + self.key + ":"
+        res = "ARRAY OF SUBSTRUCTURE " + self.key + ":"
         for r in self.leafes:
             res += "\n"+ ("    "*self.identlevel) + str(r)
         return res
