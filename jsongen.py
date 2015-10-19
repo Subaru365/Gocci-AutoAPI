@@ -6,8 +6,10 @@ from util import *
 def generate(everything):
 
     res = {}
-    # res["api"] = {}
-    # res["globalerror"] = {}
+
+    res["api"] = everything.apidict.pairs
+    res["globalerror"] = { err.code : err.msg for err in everything.globalErrors }
+
     res["uris"] = {}
 
     for uri in everything.uriTokens:
@@ -20,24 +22,27 @@ def generate(everything):
         res["uris"][uri.path]["errors"] = { err.code : err.msg for err in uri.errors }
 
     
-    def onleaf(x):
-        current[x.key] = x.regex
-    def onarray(x):
-        current[x.key] = [x.regex]
-    def oncompoundarray(x):
+    def onleaf(leaf):
+        current[leaf.key] = leaf.regex
+
+    def onarray(array):
+        current[array.key] = [array.regex]
+
+    def oncompoundarray(compoundarray):
         nonlocal current
         tmp = current
-        a = {}
-        current[x.key] = [a]
-        current = a
-        x.traverse(onleaf, onarray, oncompoundarray, ondict)
+        ref = {}
+        current[compoundarray.key] = [ref]
+        current = ref
+        compoundarray.traverse(onleaf, onarray, oncompoundarray, ondict)
         current = tmp
-    def ondict(x):
+
+    def ondict(dictleaf):
         nonlocal current
         tmp = current
-        current[x.key] = {}
-        current = current[x.key]
-        x.traverse(onleaf, onarray, oncompoundarray, ondict)
+        current[dictleaf.key] = {}
+        current = current[dictleaf.key]
+        dictleaf.traverse(onleaf, onarray, oncompoundarray, ondict)
         current = tmp
    
 

@@ -43,9 +43,9 @@ def parseGlobalError(line):
     so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
     return ErrorToken(so.group(1), so.group(2))
 
-def parseBaseFrameLine(line, baseframe):
-    so = parseLineOrErrorOut(r'^API\s+"([a-z_]+)"\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
-    baseframe.addPair(so.group(1), so.group(2))
+def parseAPIDictLine(line, apidict):
+    so = parseLineOrErrorOut(r'^API\s+"([a-zA-Z0-9_]+)"\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
+    apidict.addPair(so.group(1), so.group(2))
 
 
 def parseResponseLine(firstline, lineiterator, level=1):
@@ -128,7 +128,7 @@ def parse(infile, vmajor, vminor):
     
     uris = []
     global_errors = []
-    baseframe = BaseFrame()
+    apidict = APIDict()
     aaaversion = None 
 
     while not len(cleanContend) == 0:
@@ -143,7 +143,7 @@ def parse(infile, vmajor, vminor):
                 aaaversion = so.group(1) +"."+ so.group(2)
 
         elif line.startswith("API"):
-            parseBaseFrameLine(line, baseframe)
+            parseAPIDictLine(line, apidict)
 
         elif line.startswith("URI"):
             so = parseLineOrErrorOut(r'URI\s+(/[a-z_/]+)$', line, "PARSING ERROR: URI definition" )
@@ -179,7 +179,7 @@ def parse(infile, vmajor, vminor):
     for uri in uris:
         uri.autoGenerateMalformErrors()
 
-    return Everything(aaaversion, baseframe, global_errors, uris)
+    return Everything(aaaversion, apidict, global_errors, uris)
 
 
 

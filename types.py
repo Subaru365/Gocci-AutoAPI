@@ -3,25 +3,37 @@
 
 class Everything:
     def __init__(self, v, bf, ge, uris):
-        self.version = v
-        self.baseframe = bf
-        self.globalErrors = ge
-        self.uriTokens = uris
+        self.version = v       # Simple String
+        self.apidict = bf      # Like a dict
+        self.globalErrors = ge # Array of ErrorToken
+        self.uriTokens = uris  # Array of URIToken
 
-class BaseFrame:
 
+    def transformURITokensFromFlatArrayToTreeStructureBasedOnTheirPath(self):
+        def stepDown(thisDict, rest, uri):
+            if len(rest) > 1 and rest[0] in thisDict:
+                stepDown(thisDict[rest[0]], rest[1:], uri)
+            elif len(rest) > 1: 
+                thisDict[rest[0]] = {}
+                stepDown(thisDict[rest[0]], rest[1:], uri)
+            else:
+                thisDict[rest[0]] = uri
+
+        uriTree = {} 
+        for uri in self.uriTokens:
+            stepDown(uriTree, uri.pathComponents(), uri)
+        return uriTree
+
+class APIDict:
     def __init__(self):
-        self.validation_pairs = dict()
+        self.pairs = dict()
 
     def addPair(self, key, value):
-        self.validation_pairs[key] = value
-
-    def getPairs(self):
-        return validation_pairs
+        self.pairs[key] = value
 
     def __str__(self):
-        res =  "API BASEFRAME:"
-        for k,v in self.validation_pairs.items():
+        res =  "API DICT:"
+        for k,v in self.pairs.items():
             res += "\n\t{}:\t{}".format(k,v)
         return res
 
@@ -31,7 +43,7 @@ class URIToken:
     def __init__(self, p):
         self.path = p
         self.parameters = []
-        self.responses = None
+        self.responses = ResponseDictonaryToken("dummy for URIs with no responses", 0)
         self.errors = []
 
     def __str__(self):
@@ -47,12 +59,16 @@ class URIToken:
     def normalizedKey(self):
         return self.path.replace('/', '__')
 
+    def pathComponents(self):
+        return self.path[1:].split("/")
+
     def addError(self, x):
         self.errors.append(x)
     def addParameter(self, x):
         self.parameters.append(x)
     def addResponse(self, x):
         self.responses = x
+
 
 
     def autoGenerateMalformErrorForOneParameter(self, p):

@@ -4,7 +4,7 @@
 VER 3.5
 
 ############################################################################################
-# First the description of the json API Baseframe.
+# First a reminder of our wunderful API Baseframe: 
 ############################################################################################
 #{
 #   "api_version": "3.1",
@@ -16,11 +16,19 @@ VER 3.5
 #      "token":"eyJrfehfhwiehfwhfiw877ef7wf7w......"
 #   }
 #}
-API  "api_version" 		"\d+\.\d+"
-API  "api_uri" 			"[a-z/_]+"
-API  "api_code" 		"(SUCCESS)|(ERROR_[A-Z_]+)"
-API  "api_message" 		"\w+"
-API  "api_payload" 		"valid_json"
+
+
+############################################################################################
+# You can use this like a dictonary key->value style and use it in your python code 
+############################################################################################
+API "baseurl"	    "https://api.gocci.me/v1/mobile"
+API "testurl"	    "http://test.api.gocci.me/v1/mobile"
+API "target_API"    "/v1/mobile"
+
+API "api_frame_regex_version" 		"\d+\.\d+"
+API "api_frame_regex_uri" 			"[a-z/_]+"
+API "api_frame_regex_code" 		    "(SUCCESS)|(ERROR_[A-Z_]+)"
+API "api_frame_regex_message" 		"\w+"
 
 
 ############################################################################################
@@ -116,5 +124,38 @@ RES token 			"^[a-zA-Z0-9.-_]{400,2200}$"
 ERR ERROR_USERNAME_NOT_REGISTERD "The entered username does not exist"
 ERR ERROR_PASSWORD_WRONG "Password wrong"
 ERR ERROR_REGISTER_ID_ALREADY_REGISTERD "This deviced already has an registerd other account"
+
+
+############################################################################################
+URI /post/password
+############################################################################################
+PAR pass 			"^\w{6,25}$"
+
+
+############################################################################################
+URI /post/sns
+############################################################################################
+PAR provider 		"^(api.twitter.com)|(graph.facebook.com)$"
+PAR token 			"^\S{20,4000}$"
+PAR profile_img 	"^http\S+$"
+############################################################################################
+ERR ERROR_SNS_PROVIDER_TOKEN_NOT_VALID "The provided sns token is invalid or has expired"
+ERR ERROR_PROFILE_IMAGE_DOES_NOT_EXIST "The provided link to the profile image cound not be downloaded"
+ERR ERROR_PROVIDER_UNREACHABLE "The provided providers server infrastructure appears to be down"
+
+
+############################################################################################
+URI /post/sns_unlink
+############################################################################################
+PAR provider 		"^(api.twitter.com)|(graph.facebook.com)$"
+PAR token 			"^\S{20,4000}$"
+############################################################################################
+ERR ERROR_SNS_PROVIDER_TOKEN_NOT_VALID "The provided sns token is invalid or has expired"
+ERR ERROR_PROVIDER_UNREACHABLE "The provided providers server infrastructure appears to be down"
+
+
+
+
+
 
 

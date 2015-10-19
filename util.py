@@ -31,6 +31,10 @@ def regexify(code):
 
 
 def ident(code):
-    return "    " + code.replace('\n', '\n    ')
+    res = "    " + code.replace('\n', '\n    ')
 
+    if res.endswith("    "):
+        return res[:-4]
+    else:
+        return res + "\n"
 
