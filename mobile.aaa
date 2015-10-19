@@ -24,7 +24,7 @@ API  "api_payload" 		"valid_json"
 
 
 ############################################################################################
-# Global errors are defines before the first URI definition.
+# Global errors are defined before the first URI definition.
 ############################################################################################
 ERR SUCCESS 				        "Successful API request"
 ERR ERROR_UNKNOWN_ERROR             "Unknown global error"

@@ -129,6 +129,7 @@ def parse(infile, vmajor, vminor):
     uris = []
     global_errors = []
     baseframe = BaseFrame()
+    aaaversion = None 
 
     while not len(cleanContend) == 0:
         line = cleanContend.pop()
@@ -139,6 +140,8 @@ def parse(infile, vmajor, vminor):
                 die("ERROR: Parser version (" + VERSION + ") too low for AAA file ("+ so.group(1) +"."+ so.group(2)+")")
             else:
                 msg("AAA File version: " + so.group(1) +"."+ so.group(2))
+                aaaversion = so.group(1) +"."+ so.group(2)
+
         elif line.startswith("API"):
             parseBaseFrameLine(line, baseframe)
 
@@ -170,10 +173,13 @@ def parse(infile, vmajor, vminor):
                 # URI specific errors
                 uris[-1].addError(parseUriLine(line))
 
+    if aaaversion == None:
+        die("The AAA file must contain a version definition in the form of 'VER X.Y'")
+
     for uri in uris:
         uri.autoGenerateMalformErrors()
 
-    return Everything(baseframe, global_errors, uris)
+    return Everything(aaaversion, baseframe, global_errors, uris)
 
 
 

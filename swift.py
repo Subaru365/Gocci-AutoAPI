@@ -54,8 +54,7 @@ def generate(everything):
     res += swift_parameterValidationLookUpTable + "\n\n"
     res += swift_allParameterValidationFunctions 
 
-    # return wrapInClass("API", res)
-    return swift_allErrorsAsEnum 
+    return wrapInClass("API", res)
 
 
 

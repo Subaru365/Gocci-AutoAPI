@@ -2,7 +2,8 @@
 
 
 class Everything:
-    def __init__(self, bf, ge, uris):
+    def __init__(self, v, bf, ge, uris):
+        self.version = v
         self.baseframe = bf
         self.globalErrors = ge
         self.uriTokens = uris
