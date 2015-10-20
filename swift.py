@@ -6,6 +6,7 @@ from util import *
 
 def generate(everything):
 
+    masterClassName = "API3"
 
     def forEachLeaf(resp):
         resp.regex = regexify(resp.regex)
@@ -15,8 +16,8 @@ def generate(everything):
             para.regex = regexify(para.regex)
         uri.responses.recursive_traverse(forEachLeaf, lambda x:x)
 
-    swift_intro  = staticLetString("baseurl", everything.apidict.pairs["baseurl"])
-    swift_intro += staticLetString("testurl", everything.apidict.pairs["testurl"])
+    swift_intro  = staticLetString("baseurl", stringify(everything.apidict.pairs["baseurl"]))
+    swift_intro += staticLetString("testurl", stringify(everything.apidict.pairs["testurl"]))
 
     swift_allErrorsAsEnum = generateEnum("GlobalCode", [ e.code for e in everything.globalErrors ] )
 
@@ -27,16 +28,16 @@ def generate(everything):
     swift_codeReverseLookUpTable = generateCodeReverseLookUpTable("globalErrorReverseLookupTable", tmp)
 
     swift_APIClassOtherStuff = """
-        static var globalErrorMapping: [GlobalCode: (GlobalCode, String)->()] = [:]
-        static var onUnhandledError: (GlobalCode, String)->() = API2.unhandledErrorDefault
+static var globalErrorMapping: [GlobalCode: (GlobalCode, String)->()] = [:]
+static var onUnhandledError: (GlobalCode, String)->() = """ + masterClassName + """.unhandledErrorDefault
 
-        private class func unhandledErrorDefault(c: GlobalCode, m: String) {
-            print("FATAL: UNHANDLED API ERROR: \(c): \(m)")
-        }
+private class func unhandledErrorDefault(c: GlobalCode, m: String) {
+    print("FATAL: UNHANDLED API ERROR: \(c): \(m)")
+}
 
-        class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
-            globalErrorMapping[gcode] = perform
-        }"""
+class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
+    globalErrorMapping[gcode] = perform
+}"""
 
     swift_handyGlobalErrorOns = generateHandyErrorOnGlobal([ e.code for e in everything.globalErrors ])
 
@@ -60,49 +61,37 @@ def generate(everything):
         res += generateCodeReverseLookUpTable("localErrorReverseLookupTable", tmp) + "\n\n"
         res += "func on(code: LocalCode, perform: (LocalCode, String)->()){\n    self.localErrorMapping[code] = perform\n}\n\n"
         res += generateHandyErrorOnLocal([ e.code for e in uri.errors ]) + "\n\n"
+        res += generateParameterValidationForOneURI(uri) + "\n\n"
         return res
 
-    def classBuilder(eda): 
+    def subClassBuilder(eda): 
         classet = ""
         for node, v in eda.items():
             if type(v) is dict:
                 clas  = beforeNode(v, node)
-                clas += ident(classBuilder(v))
+                clas += ident(subClassBuilder(v))
                 clas += afterNode(v, node)
                 classet += clas
             elif type(v) is types.URIToken:
-                classet += wrapInClass(node, onURIToken(v, node)) + "\n\n"
+                # classet += wrapInClass(node, onURIToken(v, node), "APIRequestProtocol") + "\n"
+                classet += wrapInClass(node, onURIToken(v, node)) + "\n"
         return classet
 
-    print(classBuilder(uriTree))
-    return ""
+    swift_subClasses = subClassBuilder(uriTree)
 
     # def sortarray(ar):
     # allcodes = list(ar.keys())
     # allcodes.sort(reverse=True)
-
-    # paraValiTable = []
-    # swift_allParameterValidationFunctions = ""
-    # for uri in everything.uriTokens:
-        # inner = "class func validateParameter_"+ uri.normalizedKey() +"(map: [String: String]) -> API.Code {\n"
-        # paraValiTable.append( (uri.path, "validateParameter_"+ uri.normalizedKey()) )
-        # for para in uri.parameters:
-            # inner += ident(generateOneParameterRegExCheck("map", para.key, para.regex))
-        # inner += "\n    return API.Code.SUCCESS\n}\n"
-        # swift_allParameterValidationFunctions += "\n\n" + inner 
-
-    
-    # swift_parameterValidationLookUpTable = generateParameterValidationFunctionLookUpTable("parameterValidationLookUpTable", paraValiTable)
 
     res = swift_intro + "\n\n"
     res += swift_allErrorsAsEnum + "\n\n"
     res += swift_codeReverseLookUpTable + "\n\n"
     res += swift_allErrorMessages + "\n\n"
     res += swift_handyGlobalErrorOns + "\n\n"
-    # res += swift_parameterValidationLookUpTable + "\n\n"
-    # res += swift_allParameterValidationFunctions 
+    res += swift_APIClassOtherStuff + "\n\n"
+    res += swift_subClasses + "\n\n"
 
-    return wrapInClass("API2", res)
+    return wrapInClass("API3", res)
 
 
 
@@ -112,8 +101,9 @@ def staticLetString(varname, value):
     return "static let {vn} = {v}\n".format(vn=varname, v=value)
 
 
-def wrapInClass(classname, code):
-    return "class {} {{\n{}\n}}".format(classname, ident(code))
+def wrapInClass(classname, code, *extends):
+    ex = "" if len(extends)==0 else ": " + ", ".join(extends)
+    return "class {NAME}{EXTENDS} {{\n{CODE}}}\n".format(NAME=classname, EXTENDS=ex, CODE=ident(code))
 
 def generateEnum(enumname, items):
     res = "enum " + enumname + " {"
@@ -142,17 +132,45 @@ class func on_{ec}(perform:(GlobalCode, String)->()) {{
 def generateHandyErrorOnLocal(ecodes):
     template = """
 func on_{ec}(perform:(LocalCode, String)->()) {{
-    globalErrorMapping[.{ec}] = perform\n}}"""
+    localErrorMapping[.{ec}] = perform\n}}"""
     return "".join( [ template.format(ec=ec) for ec in ecodes ] )
 
-def generateParameterValidationFunctionLookUpTable(tablename, uri_functionname_tupels):
-    res = "static let "+ tablename +": [String: ([String: String]) -> GlobalCode] = ["
-    for k,v in uri_functionname_tupels:
-        res += "\n    " + stringify(k) + ": API."+ v +","
-    return res + "\n]"
+
+def generateParameterValidationForOneURI(uri):
+    pre = """
+func validateParameterPairs() -> [String: String]? {\n
+    var res: [String: String] = [:]\n\n"""
+    post = "\n    return res\n}\n"
+    template = """
+if let {PARA} = self.{PARA} {{
+    if let {PARA} = self.{PARA} where !APIUtil.matches({PARA}, re: {REGEX}) {{
+        let emsg = {EMMAL}
+        self.localErrorMapping[.{ECODE}]?(.{ECODE}, emsg)
+        return nil
+    }}
+    else {{
+        res["{PARA}"] = {PARA}
+    }}
+}}"""
+    optional_template = """
+else {{
+    let emsg = {EMMIS} 
+    self.localErrorMapping[.{ECODE}]?(.{ECODE}, emsg)
+    return nil
+}}
+"""
+    res = ""
+    for p in uri.parameters:
+        errormsg = stringify(p.corrospondigMalformError.msg)
+        res += template.format(PARA=p.key, REGEX=p.regex, ECODE=p.corrospondigMalformError.code, EMMAL=errormsg)
+        if not p.optional:
+            errormsg = stringify(p.corrospondigMissingError.msg)
+            res += optional_template.format(ECODE=p.corrospondigMissingError.code, EMMIS=errormsg)
+    return pre + ident(res) + post
 
 
 def generateOneParameterRegExCheck(tablename, parameter, regex):
+
     return  """
 if let value = {MAPNAME}["{PARAMETER}"] {{
     if !APIUtil.matches(value, re: {REGEX}) {{

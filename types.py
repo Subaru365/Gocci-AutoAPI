@@ -72,10 +72,14 @@ class URIToken:
 
 
     def autoGenerateMalformErrorForOneParameter(self, p):
-        msg = "Parameter '"+ p.key +"' does not exist." 
-        self.errors.append(ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MISSING", msg))
+        if not p.optional:
+            msg = "Parameter '"+ p.key +"' does not exist." 
+            p.corrospondigMissingError = ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MISSING", msg)
+            self.errors.append(p.corrospondigMissingError)
+
         msg = "Parameter '"+ p.key +"' is malformed. Should correspond to '"+ p.regex +"'"
-        self.errors.append(ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MALFORMED", msg))
+        p.corrospondigMalformError = ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MALFORMED", msg)
+        self.errors.append(p.corrospondigMalformError)
 
 
     def autoGenerateMalformErrorForOneResponse(self, r):
@@ -98,10 +102,12 @@ class URIToken:
         self.autoGenerateMalformErrorsForAllResponses(self.responses)
 
 class ParameterToken:
-    def __init__(self, key, re, tags=None):
+    def __init__(self, key, re, optional=False):
         self.key = key
         self.regex = re
-        # TODO tags
+        self.optional = optional
+        self.corrospondigMalformError = None
+        self.corrospondigMissingError = None
 
     def __str__(self):
         return "PARAMETER: " + self.key + " " + self.regex
@@ -214,6 +220,7 @@ class ErrorToken:
 
     def __str__(self):
         return "ERROR: " + self.code +" "+ self.msg
+
 
 
 

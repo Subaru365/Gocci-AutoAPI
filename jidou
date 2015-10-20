@@ -80,8 +80,8 @@ def main(argv):
         source = jsongen.generate(token_tree)
     # elif source_target == SourceTarget.JAVA:
         # source = java.generate(token_tree)
-    # elif source_target == SourceTarget.PHP
-        # source = php.generate(token_tree)
+    elif source_target == SourceTarget.PHP:
+        source = php.generate(token_tree)
     # elif source_target == SourceTarget.JS
         # source = javascript.generate(token_tree)
 
