@@ -23,7 +23,6 @@ def generate(everything):
     tmp = { e.code: stringify(e.msg) for e in everything.globalErrors }
     swift_allErrorMessages = generateErrorMsgTable("globalErrorMessageTable", tmp)
 
-
     tmp = { e.code: e.code for e in everything.globalErrors }
     swift_codeReverseLookUpTable = generateCodeReverseLookUpTable("globalErrorReverseLookupTable", tmp)
 
@@ -39,7 +38,7 @@ def generate(everything):
             globalErrorMapping[gcode] = perform
         }"""
 
-    swift_handyGlobalErrorOns = generateHandyGloabalErrorOn([ e.code for e in everything.globalErrors ])
+    swift_handyGlobalErrorOns = generateHandyErrorOnGlobal([ e.code for e in everything.globalErrors ])
 
     uriTree = everything.transformURITokensFromFlatArrayToTreeStructureBasedOnTheirPath()
 
@@ -51,7 +50,17 @@ def generate(everything):
         return "}\n\n" 
 
     def onURIToken(uri, nodeName):
-        return "let apipath = " + stringify(uri.path)
+        res  = "let apipath = " + stringify(uri.path) + "\n\n"
+        res += "".join([ "var "+ x.key +": String?\n" for x in uri.parameters ]) + "\n"
+        res += "var localErrorMapping: [LocalCode: (LocalCode, String)->()] = [:]\n\n"
+        res += generateEnum("LocalCode", [ e.code for e in uri.errors ] ) + "\n\n"
+        tmp = { e.code: stringify(e.msg) for e in uri.errors }
+        res += generateErrorMsgTable("localErrorMessageTable", tmp) + "\n\n"
+        tmp = { e.code: e.code for e in uri.errors }
+        res += generateCodeReverseLookUpTable("localErrorReverseLookupTable", tmp) + "\n\n"
+        res += "func on(code: LocalCode, perform: (LocalCode, String)->()){\n    self.localErrorMapping[code] = perform\n}\n\n"
+        res += generateHandyErrorOnLocal([ e.code for e in uri.errors ]) + "\n\n"
+        return res
 
     def classBuilder(eda): 
         classet = ""
@@ -68,8 +77,8 @@ def generate(everything):
     print(classBuilder(uriTree))
     return ""
 
-
-    # allcodes = list(allerros.keys())
+    # def sortarray(ar):
+    # allcodes = list(ar.keys())
     # allcodes.sort(reverse=True)
 
     # paraValiTable = []
@@ -124,9 +133,15 @@ def generateCodeReverseLookUpTable(varname, codes):
         res += "\n    "+ stringify(c) +": ."+ c +","
     return res + "\n]"
 
-def generateHandyGloabalErrorOn(ecodes):
+def generateHandyErrorOnGlobal(ecodes):
     template = """
 class func on_{ec}(perform:(GlobalCode, String)->()) {{
+    globalErrorMapping[.{ec}] = perform\n}}"""
+    return "".join( [ template.format(ec=ec) for ec in ecodes ] )
+
+def generateHandyErrorOnLocal(ecodes):
+    template = """
+func on_{ec}(perform:(LocalCode, String)->()) {{
     globalErrorMapping[.{ec}] = perform\n}}"""
     return "".join( [ template.format(ec=ec) for ec in ecodes ] )
 

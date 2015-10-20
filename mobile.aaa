@@ -141,7 +141,7 @@ PAR profile_img 	"^http\S+$"
 ############################################################################################
 ERR ERROR_SNS_PROVIDER_TOKEN_NOT_VALID "The provided sns token is invalid or has expired"
 ERR ERROR_PROFILE_IMAGE_DOES_NOT_EXIST "The provided link to the profile image cound not be downloaded"
-ERR ERROR_PROVIDER_UNREACHABLE "The provided providers server infrastructure appears to be down"
+ERR ERROR_PROVIDER_UNREACHABLE "The providers server infrastructure appears to be down"
 
 
 ############################################################################################
@@ -151,7 +151,7 @@ PAR provider 		"^(api.twitter.com)|(graph.facebook.com)$"
 PAR token 			"^\S{20,4000}$"
 ############################################################################################
 ERR ERROR_SNS_PROVIDER_TOKEN_NOT_VALID "The provided sns token is invalid or has expired"
-ERR ERROR_PROVIDER_UNREACHABLE "The provided providers server infrastructure appears to be down"
+ERR ERROR_PROVIDER_UNREACHABLE "The providers server infrastructure appears to be down"
 
 
 
