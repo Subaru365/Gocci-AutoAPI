@@ -56,9 +56,9 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
         res += "var localErrorMapping: [LocalCode: (LocalCode, String)->()] = [:]\n\n"
         res += generateEnum("LocalCode", [ e.code for e in uri.errors ] ) + "\n\n"
         tmp = { e.code: stringify(e.msg) for e in uri.errors }
-        res += generateErrorMsgTable("localErrorMessageTable", tmp) + "\n\n"
+        res += generateSubErrorMsgTable("localErrorMessageTable", tmp, toAPIPath(masterClassName, uri.path)) + "\n\n"
         tmp = { e.code: e.code for e in uri.errors }
-        res += generateCodeReverseLookUpTable("localErrorReverseLookupTable", tmp) + "\n\n"
+        res += generateSubCodeReverseLookUpTable("localErrorReverseLookupTable", tmp, toAPIPath(masterClassName, uri.path)) + "\n\n"
         res += "func on(code: LocalCode, perform: (LocalCode, String)->()){\n    self.localErrorMapping[code] = perform\n}\n\n"
         res += generateHandyErrorOnLocal([ e.code for e in uri.errors ]) + "\n\n"
         res += generateParameterValidationForOneURI(uri) + "\n\n"
@@ -95,7 +95,8 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
 
 
 
-
+def toAPIPath(masterclassname, path):
+    return masterclassname + path.replace('/', '.')
 
 def staticLetString(varname, value):
     return "static let {vn} = {v}\n".format(vn=varname, v=value)
@@ -117,11 +118,30 @@ def generateErrorMsgTable(varname, errorMsgDict):
         res += "\n    ."+ k +": \n\t\t"+ v +","
     return res + "\n]"
 
+
+def generateSubErrorMsgTable(varname, errorMsgDict, apipath):
+    res  = "static let localErrorMessageTable: [LocalCode: String] = "+apipath+".xCodeBugProtectionLocalErrorMessageTableGenerator()\n\n"
+    res += "private class func xCodeBugProtectionLocalErrorMessageTableGenerator() -> [LocalCode: String] {\n"
+    res += "    var res: [LocalCode: String] = [:]\n"
+    for code,msg in errorMsgDict.items():
+        res += "    res[."+ code +"] = \n        " + msg + "\n"
+    return res + "    return res\n}\n"
+
 def generateCodeReverseLookUpTable(varname, codes):
     res = "static let "+ varname +": [String: GlobalCode] = ["
     for c in codes:
         res += "\n    "+ stringify(c) +": ."+ c +","
     return res + "\n]"
+
+def generateSubCodeReverseLookUpTable(varname, codes, apipath):
+    res  = "static let localErrorReverseLookupTable: [String: LocalCode] = "+apipath+".xCodeBugProtectionLocalReverseLookUpTableGenerator()\n\n"
+    res += "private class func xCodeBugProtectionLocalReverseLookUpTableGenerator() -> [String: LocalCode] {\n"
+    res += "    var res: [String: LocalCode] = [:]\n"
+    for code in codes:
+        res += "    res["+ stringify(code) +"] = ." + code + "\n"
+    return res + "    return res\n}\n"
+
+
 
 def generateHandyErrorOnGlobal(ecodes):
     template = """
