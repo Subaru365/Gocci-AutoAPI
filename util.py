@@ -19,6 +19,9 @@ def regexify(code):
     return stringify(code) 
     # return stringify(code.replace('\\', '\\\\')) 
 
+def cAmElCaSe(st):
+    return "".join([ s.capitalize() for s in st.split('_') ])
+
 def ident(code):
     res = "    " + code.replace('\n', '\n    ')
     return res[:-4] if res.endswith("    ") else res + "\n"

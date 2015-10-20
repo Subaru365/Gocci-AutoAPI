@@ -4,8 +4,83 @@ import types
 import textwrap
 from util import *
 
+# class Stack:
+    # def __init__(self):
+        # self.items = []
+
+    # def push(self, item):
+        # self.items.append(item)
+
+    # def pop(self):
+        # return self.items.pop()
+
+    # def last(self):
+        # return self.items[-1]
+
+    # def plusDict(self, k, v):
+        # print(self.items)
+        # # try:
+        # self.items[-1][k] = v
+        # # except:
+            # # self.items.append({k:v})
+
+    # def plusString(self, st):
+        # # try:
+            # self.items[-1] = self.items[-1] + st
+        # # except:
+            # # self.items.append(st)
+
+    # def peek(self):
+        # return self.items[len(self.items)-1]
+
+    # def join(self, joiner=""):
+        # return joiner.join(self.items)
+
+
 def generate(everything):
 
+    # def generateConstructor(pairs):
+        # res  = "init(" + ", ".join([ k+": "+t for k,t in pairs.items() ]) + ") {\n"
+        # res += "".join([ "    self.{k} = {k}\n".format(k=key) for key in pairs.keys() ])
+        # return res + "}\n"
+
+    
+    def onleaf(leaf):
+        nonlocal payload
+        payload += "var " + leaf.key + ": String\n"
+
+    def onarray(array):
+        nonlocal payload
+        payload += "var " + array.key + ": [String]\n"
+
+    def oncompoundarray(compoundarray):
+        nonlocal payload
+        # compoundarray.traverse(onleaf, onarray, oncompoundarray, ondict)
+
+    def ondict(dictleaf):
+        nonlocal payload
+        clas = cAmElCaSe(dictleaf.key)
+        payload += "\nvar " + dictleaf.key + ": " + clas  + "\n"
+        tmp = payload
+        payload = ""
+        visitor(clas, dictleaf)
+        payload = tmp + "\n" + payload + "\n"
+    
+    def visitor(className, root):
+        nonlocal payload
+        root.traverse(onleaf, onarray, oncompoundarray, ondict)
+        payload = "class "+className+" {\n" + ident(payload) + "}\n\n"
+
+    payload = ""
+    visitor("Payload", everything.uriTokens[0].responses)
+    print(payload)
+
+    # for uri in everything.uriTokens:
+        # visitor("Payload", uri.responses)
+
+    
+    
+    return ""
     masterClassName = "API3"
 
     def forEachLeaf(resp):

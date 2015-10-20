@@ -3,7 +3,8 @@
 TARGET="jidou"
 # PARAMETER="-s -j -p --swift --java --php input_FILE output_FILE"
 # PARAMETER="--json syntaxtest.aaa"
-PARAMETER="--swift mobile.aaa"
+PARAMETER="--swift syntaxtest.aaa"
+# PARAMETER="--swift mobile.aaa"
 # PARAMETER="--php mobile.aaa"
 INTERPRETER="python3.5"
 
