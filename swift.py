@@ -4,98 +4,22 @@ import types
 import textwrap
 from util import *
 
-# class Stack:
-    # def __init__(self):
-        # self.items = []
 
-    # def push(self, item):
-        # self.items.append(item)
-
-    # def pop(self):
-        # return self.items.pop()
-
-    # def last(self):
-        # return self.items[-1]
-
-    # def plusDict(self, k, v):
-        # print(self.items)
-        # # try:
-        # self.items[-1][k] = v
-        # # except:
-            # # self.items.append({k:v})
-
-    # def plusString(self, st):
-        # # try:
-            # self.items[-1] = self.items[-1] + st
-        # # except:
-            # # self.items.append(st)
-
-    # def peek(self):
-        # return self.items[len(self.items)-1]
-
-    # def join(self, joiner=""):
-        # return joiner.join(self.items)
 
 
 def generate(everything):
 
-    # def generateConstructor(pairs):
-        # res  = "init(" + ", ".join([ k+": "+t for k,t in pairs.items() ]) + ") {\n"
-        # res += "".join([ "    self.{k} = {k}\n".format(k=key) for key in pairs.keys() ])
-        # return res + "}\n"
-
-    
-    def onleaf(leaf, typ="String!"):
-        nonlocal payload
-        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=leaf.key, TYPE=typ)
-
-    def onarray(array, typ="[String!]= []"):
-        nonlocal payload
-        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=array.key, TYPE=typ)
-
-    def oncompoundarray(compoundarray):
-        oncomplextype(compoundarray, "[[String: {CLASSNAME}!]] = []", onarray)
-
-    def ondict(dictleaf):
-        oncomplextype(dictleaf, "[String: {CLASSNAME}!] = [:]", onleaf)
-
-    def oncomplextype(complextype, typestr, typegenerator):
-        nonlocal payload
-        payload += "\n"
-        clas = cAmElCaSe(complextype.key)
-        typegenerator(complextype, typestr.format(CLASSNAME=clas))
-        tmp = payload
-        payload = ""
-        visitor(clas, complextype)
-        payload = tmp + payload
-
-    
-    def visitor(className, root):
-        nonlocal payload
-        root.traverse(onleaf, onarray, oncompoundarray, ondict)
-        payload = "class "+className+" {\n" + ident(payload) + "}\n"
-
-    payload = ""
-    visitor("Payload", everything.uriTokens[0].responses)
-    print(payload)
-
     # for uri in everything.uriTokens:
-        # payload = ""
-        # visitor("Payload", uri.responses)
-        # print(payload)
+        # print(generatePayloadType(uri.responses) + "\n\n\n")
+    # return ""
 
-    
-    
-    return ""
+
+
     masterClassName = "API3"
-
-    def forEachLeaf(resp):
-        resp.regex = regexify(resp.regex)
 
     for uri in everything.uriTokens:
         for para in uri.parameters:
             para.regex = regexify(para.regex)
-        uri.responses.recursive_traverse(forEachLeaf, lambda x:x)
 
     swift_intro  = staticLetString("baseurl", stringify(everything.apidict.pairs["baseurl"]))
     swift_intro += staticLetString("testurl", stringify(everything.apidict.pairs["testurl"]))
@@ -121,21 +45,20 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
     uriTree = everything.transformURITokensFromFlatArrayToTreeStructureBasedOnTheirPath()
 
 
-    def beforeNode(node, nodeName):
-        return "class " + nodeName + "{\n\n"
-
-    def afterNode(node, nodeName):
-        return "}\n\n" 
-
     def onURIToken(uri, nodeName):
         res  = "let apipath = " + stringify(uri.path) + "\n\n"
         res += "".join([ "var "+ x.key +": String?\n" for x in uri.parameters ]) + "\n"
         res += "var localErrorMapping: [LocalCode: (LocalCode, String)->()] = [:]\n\n"
+        res += "var onUnhandledError: (LocalCode, String)->() = { print("FATAL: UNHANDLED API ERROR: \($0): \($1)") }\n\n"
         res += generateEnum("LocalCode", [ e.code for e in uri.errors ] ) + "\n\n"
+
+        res += generatePayloadType(uri.responses) + "\n"
+
         tmp = { e.code: stringify(e.msg) for e in uri.errors }
-        res += generateSubErrorMsgTable("localErrorMessageTable", tmp, toAPIPath(masterClassName, uri.path)) + "\n\n"
-        tmp = { e.code: e.code for e in uri.errors }
-        res += generateSubCodeReverseLookUpTable("localErrorReverseLookupTable", tmp, toAPIPath(masterClassName, uri.path)) + "\n\n"
+        res += generateSubErrorMsgTable("localErrorMessageTable", tmp) + "\n\n"
+        tmp = [ e.code for e in uri.errors ]
+        res += generateSubCodeReverseLookUpTable("localErrorReverseLookupTable", tmp) + "\n\n"
+
         res += "func on(code: LocalCode, perform: (LocalCode, String)->()){\n    self.localErrorMapping[code] = perform\n}\n\n"
         res += generateHandyErrorOnLocal([ e.code for e in uri.errors ]) + "\n\n"
         res += generateParameterValidationForOneURI(uri) + "\n\n"
@@ -145,13 +68,11 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
         classet = ""
         for node, v in eda.items():
             if type(v) is dict:
-                clas  = beforeNode(v, node)
-                clas += ident(subClassBuilder(v))
-                clas += afterNode(v, node)
-                classet += clas
+                code = ident(subClassBuilder(v))
+                classet += "class {CN} {{\n\n{CODE} }}\n\n".format(CN=node, CODE=code)
             elif type(v) is types.URIToken:
-                # classet += wrapInClass(node, onURIToken(v, node), "APIRequestProtocol") + "\n"
-                classet += wrapInClass(node, onURIToken(v, node)) + "\n"
+                classet += wrapInClass(node, onURIToken(v, node), "APIRequestProtocol") + "\n"
+                # classet += wrapInClass(node, onURIToken(v, node)) + "\n"
         return classet
 
     swift_subClasses = subClassBuilder(uriTree)
@@ -195,14 +116,12 @@ def generateErrorMsgTable(varname, errorMsgDict):
         res += "\n    ."+ k +": \n\t\t"+ v +","
     return res + "\n]"
 
-
-def generateSubErrorMsgTable(varname, errorMsgDict, apipath):
-    res  = "static let localErrorMessageTable: [LocalCode: String] = "+apipath+".xCodeBugProtectionLocalErrorMessageTableGenerator()\n\n"
-    res += "private class func xCodeBugProtectionLocalErrorMessageTableGenerator() -> [LocalCode: String] {\n"
+def generateSubErrorMsgTable(varname, errorMsgDict):
+    res  = "static let localErrorMessageTable: [LocalCode: String] = {\n"
     res += "    var res: [LocalCode: String] = [:]\n"
     for code,msg in errorMsgDict.items():
         res += "    res[."+ code +"] = \n        " + msg + "\n"
-    return res + "    return res\n}\n"
+    return res + "    return res\n}()\n"
 
 def generateCodeReverseLookUpTable(varname, codes):
     res = "static let "+ varname +": [String: GlobalCode] = ["
@@ -210,14 +129,12 @@ def generateCodeReverseLookUpTable(varname, codes):
         res += "\n    "+ stringify(c) +": ."+ c +","
     return res + "\n]"
 
-def generateSubCodeReverseLookUpTable(varname, codes, apipath):
-    res  = "static let localErrorReverseLookupTable: [String: LocalCode] = "+apipath+".xCodeBugProtectionLocalReverseLookUpTableGenerator()\n\n"
-    res += "private class func xCodeBugProtectionLocalReverseLookUpTableGenerator() -> [String: LocalCode] {\n"
+def generateSubCodeReverseLookUpTable(varname, codes):
+    res  = "static let localErrorReverseLookupTable: [String: LocalCode] = {\n"
     res += "    var res: [String: LocalCode] = [:]\n"
     for code in codes:
         res += "    res["+ stringify(code) +"] = ." + code + "\n"
-    return res + "    return res\n}\n"
-
+    return res + "    return res\n}()\n"
 
 
 def generateHandyErrorOnGlobal(ecodes):
@@ -280,7 +197,41 @@ else {{
 """.format(MAPNAME=tablename, PARAMETER=parameter, REGEX=regex, PARAMETERUPCASE=parameter.upper())
         
 
+def generatePayloadType(responses):
 
+    def onleaf(leaf, typ="String!"):
+        nonlocal payload
+        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=leaf.key, TYPE=typ)
+
+    def onarray(array, typ="[String!] = []"):
+        nonlocal payload
+        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=array.key, TYPE=typ)
+
+    def oncompoundarray(compoundarray):
+        oncomplextype(compoundarray, "[[String: {CLASSNAME}!]] = []", onarray)
+
+    def ondict(dictleaf):
+        oncomplextype(dictleaf, "[String: {CLASSNAME}!] = [:]", onleaf)
+
+    def oncomplextype(complextype, typestr, typegenerator):
+        # This is magic^^
+        nonlocal payload
+        payload += "\n"
+        clas = cAmElCaSe(complextype.key)
+        typegenerator(complextype, typestr.format(CLASSNAME=clas))
+        tmp = payload
+        payload = ""
+        visitor(clas, complextype)
+        payload = tmp + payload
+    
+    def visitor(className, root):
+        nonlocal payload
+        root.traverse(onleaf, onarray, oncompoundarray, ondict)
+        payload = "" if payload == "" else "class "+className+" {\n" + ident(payload) + "}\n"
+
+    payload = ""
+    visitor("Payload", responses)
+    return payload
 
 
     # def pretty(d, indent=0):

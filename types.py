@@ -71,7 +71,7 @@ class URIToken:
 
 
 
-    def autoGenerateMalformErrorForOneParameter(self, p):
+    def autoGenerateErrorsForOneParameter(self, p):
         if not p.optional:
             msg = "Parameter '"+ p.key +"' does not exist." 
             p.corrospondigMissingError = ErrorToken("ERROR_PARAMETER_" + p.key.upper() + "_MISSING", msg)
@@ -82,23 +82,35 @@ class URIToken:
         self.errors.append(p.corrospondigMalformError)
 
 
-    def autoGenerateMalformErrorForOneResponse(self, r):
+    def autoGenerateMissingErrorForOneResponse(self, r):
         msg = "Response '"+ r.key +"' was not received"
-        self.errors.append(ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MISSING", msg))
+        r.corrospondigMissingError = ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MISSING", msg)
+        self.errors.append(r.corrospondigMissingError)
+
+    def autoGenerateMalformErrorForOneResponse(self, r):
         msg = "Response '"+ r.key +"' is malformed. Should correspond to '"+ r.regex +"'"
-        self.errors.append(ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MALFORMED", msg))
+        r.corrospondigMalformError = ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MALFORMED", msg)
+        self.errors.append(r.corrospondigMalformError)
 
     def autoGenerateMalformErrorsForAllResponses(self, resps):
         def onleaf(l):
+            self.autoGenerateMissingErrorForOneResponse(l)
             self.autoGenerateMalformErrorForOneResponse(l)
         def onarray(l):
+            self.autoGenerateMissingErrorForOneResponse(l)
             self.autoGenerateMalformErrorForOneResponse(l)
+        def ondict(l):
+            self.autoGenerateMissingErrorForOneResponse(l)
+            l.traverse(onleaf, onarray, oncompoundarray, ondict)
+        def oncompoundarray(l):
+            self.autoGenerateMissingErrorForOneResponse(l)
+            l.traverse(onleaf, onarray, oncompoundarray, ondict)
 
-        resps.recursive_traverse(onleaf, onarray)
+        resps.traverse(onleaf, onarray, oncompoundarray, ondict)
 
     def autoGenerateMalformErrors(self):
         for p in self.parameters:
-            self.autoGenerateMalformErrorForOneParameter(p)
+            self.autoGenerateErrorsForOneParameter(p)
         self.autoGenerateMalformErrorsForAllResponses(self.responses)
 
 class ParameterToken:
@@ -112,28 +124,33 @@ class ParameterToken:
     def __str__(self):
         return "PARAMETER: " + self.key + " " + self.regex
 
-# TODO tags
-class ResponseToken:
-    def __init__(self, key, re):
+class AbstractResponse(object):
+    def __init__(self, key):
         self.key = key
+        self.corrospondigMalformError = None
+        self.corrospondigMissingError = None
+
+class ResponseToken(AbstractResponse):
+    def __init__(self, key, re):
+        super().__init__(key)
         self.regex = re
 
     def __str__(self):
         return "RESPONSE: " + self.key + " " + self.regex
 
 
-class ResponseArrayToken:
+class ResponseArrayToken(AbstractResponse):
     def __init__(self, key, re, itemcount=None):
-        self.key = key
+        super().__init__(key)
         self.regex = re
         self.itemcount = itemcount
 
     def __str__(self):
         return "RESPONSE: ARRAY OF [" + self.key + "] " + self.regex
 
-class ResponseDictonaryToken:
+class ResponseDictonaryToken(AbstractResponse):
     def __init__(self, key, level):
-        self.key = key
+        super().__init__(key)
         self.leafes = []
         self.identlevel = level
 
@@ -172,9 +189,9 @@ class ResponseDictonaryToken:
             res += "\n"+ ("    "*self.identlevel) + str(r)
         return res
 
-class ResponseArrayCompoundToken:
+class ResponseArrayCompoundToken(AbstractResponse):
     def __init__(self, key, level, itemcount = None):
-        self.key = key
+        super().__init__(key)
         self.itemcount = itemcount
         self.leafes = []
         self.identlevel = level
