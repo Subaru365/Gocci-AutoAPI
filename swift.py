@@ -45,38 +45,44 @@ def generate(everything):
         # return res + "}\n"
 
     
-    def onleaf(leaf):
+    def onleaf(leaf, typ="String!"):
         nonlocal payload
-        payload += "var " + leaf.key + ": String\n"
+        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=leaf.key, TYPE=typ)
 
-    def onarray(array):
+    def onarray(array, typ="[String!]= []"):
         nonlocal payload
-        payload += "var " + array.key + ": [String]\n"
+        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=array.key, TYPE=typ)
 
     def oncompoundarray(compoundarray):
-        nonlocal payload
-        # compoundarray.traverse(onleaf, onarray, oncompoundarray, ondict)
+        oncomplextype(compoundarray, "[[String: {CLASSNAME}!]] = []", onarray)
 
     def ondict(dictleaf):
+        oncomplextype(dictleaf, "[String: {CLASSNAME}!] = [:]", onleaf)
+
+    def oncomplextype(complextype, typestr, typegenerator):
         nonlocal payload
-        clas = cAmElCaSe(dictleaf.key)
-        payload += "\nvar " + dictleaf.key + ": " + clas  + "\n"
+        payload += "\n"
+        clas = cAmElCaSe(complextype.key)
+        typegenerator(complextype, typestr.format(CLASSNAME=clas))
         tmp = payload
         payload = ""
-        visitor(clas, dictleaf)
-        payload = tmp + "\n" + payload + "\n"
+        visitor(clas, complextype)
+        payload = tmp + payload
+
     
     def visitor(className, root):
         nonlocal payload
         root.traverse(onleaf, onarray, oncompoundarray, ondict)
-        payload = "class "+className+" {\n" + ident(payload) + "}\n\n"
+        payload = "class "+className+" {\n" + ident(payload) + "}\n"
 
     payload = ""
     visitor("Payload", everything.uriTokens[0].responses)
     print(payload)
 
     # for uri in everything.uriTokens:
+        # payload = ""
         # visitor("Payload", uri.responses)
+        # print(payload)
 
     
     
@@ -104,11 +110,7 @@ def generate(everything):
 
     swift_APIClassOtherStuff = """
 static var globalErrorMapping: [GlobalCode: (GlobalCode, String)->()] = [:]
-static var onUnhandledError: (GlobalCode, String)->() = """ + masterClassName + """.unhandledErrorDefault
-
-private class func unhandledErrorDefault(c: GlobalCode, m: String) {
-    print("FATAL: UNHANDLED API ERROR: \(c): \(m)")
-}
+static var onUnhandledError: (GlobalCode, String)->() = { print("FATAL: UNHANDLED API ERROR: \($0): \($1)") }
 
 class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
     globalErrorMapping[gcode] = perform
@@ -238,7 +240,7 @@ func validateParameterPairs() -> [String: String]? {\n
     post = "\n    return res\n}\n"
     template = """
 if let {PARA} = self.{PARA} {{
-    if let {PARA} = self.{PARA} where !APIUtil.matches({PARA}, re: {REGEX}) {{
+    if let {PARA} = self.{PARA} where !APISupport.matches({PARA}, re: {REGEX}) {{
         let emsg = {EMMAL}
         self.localErrorMapping[.{ECODE}]?(.{ECODE}, emsg)
         return nil
@@ -268,7 +270,7 @@ def generateOneParameterRegExCheck(tablename, parameter, regex):
 
     return  """
 if let value = {MAPNAME}["{PARAMETER}"] {{
-    if !APIUtil.matches(value, re: {REGEX}) {{
+    if !APISupport.matches(value, re: {REGEX}) {{
         return API.Code.ERROR_PARAMETER_{PARAMETERUPCASE}_MALFORMED
     }}
 }}
