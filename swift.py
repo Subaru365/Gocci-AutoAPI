@@ -308,7 +308,7 @@ def generatePayloadType(responses):
         nonlocal payload
         payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=leaf.key, TYPE=typ)
 
-    def onarray(array, typ="[String!] = []"):
+    def onarray(array, typ="[String] = []"):
         nonlocal payload
         payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=array.key, TYPE=typ)
 
@@ -346,23 +346,26 @@ def generateValidatingJSONParser(responses):
     def onleaf(leaf):
         nonlocal validator
         validator += """{VARPATH}.{KEY} = validateSimpleResponse(json, "{KEY}", {RE},\n     .{MISERR}, .{MALERR})
-if {VARPATH}.{KEY} != nil {{ return nil }}\n
+if {VARPATH}.{KEY} == nil {{ return nil }}\n
 """.format(VARPATH=".".join(varstack), KEY=leaf.key, RE=regexify(leaf.regex), MISERR=leaf.corrospondigMissingError.code, MALERR=leaf.corrospondigMalformError.code)
 
     def onarray(array):
         nonlocal validator
-        validator += """{VARPATH}.{KEY} = validateSimpleArrayResponse(json, "{KEY}", {RE},\n    .{MISERR}, .{MALERR})
-if {VARPATH}.{KEY} != nil {{ return nil }}\n
+        validator += """if let tmp = validateSimpleArrayResponse(json, "{KEY}", {RE},\n    .{MISERR}, .{MALERR}) {{
+    {VARPATH}.{KEY} == tmp\n}}\nelse {{ return nil }}\n
 """.format(VARPATH=".".join(varstack), KEY=array.key, RE=regexify(array.regex), MISERR=array.corrospondigMissingError.code, MALERR=array.corrospondigMalformError.code)
 
     def oncompoundarray(compoundarray):
         nonlocal validator
+        nonlocal varstack
         typestack.append(cAmElCaSe(compoundarray.key))
-        varstack.append(compoundarray.key)
         pre = "if let arraydict = (json as? [String: [[String: {TYPEPATH}!]]])?[{KEY}] {{\n"
-        pre += ident("for dict in arraydict {{\n    let tmp = {TYPEPATH}()\n\n")
+        pre += ident("for json in arraydict {{\n    let tmp = {TYPEPATH}()\n\n")
         validator += pre.format(TYPEPATH=".".join(typestack), KEY=stringify(compoundarray.key)) 
+        currentvarstack = varstack
+        varstack = ["tmp"]
         stepDownMagic(compoundarray, True)
+        varstack = currentvarstack
         post = ident("    {VARPATH}.{KEY}.append(tmp)\n").format(VARPATH=".".join(varstack), KEY=compoundarray.key)+ "    }\n"
         validator += post +  "}\nelse {\n    handleLocalError(."+ compoundarray.corrospondigMissingError.code +")\n}\n\n"
 
@@ -370,10 +373,11 @@ if {VARPATH}.{KEY} != nil {{ return nil }}\n
         nonlocal validator
         typestack.append(cAmElCaSe(dictleaf.key))
         varstack.append(dictleaf.key)
-        pre = "if let dict = (json as? [String: [String: {TYPEPATH}!]])?[{KEY}] {{\n\n"
+        pre = "if let json = (json as? [String: [String: {TYPEPATH}!]])?[{KEY}] {{\n\n"
         validator += pre.format(TYPEPATH=".".join(typestack), KEY=stringify(dictleaf.key)) 
         stepDownMagic(dictleaf)
         validator += "}\nelse {\n    handleLocalError(."+ dictleaf.corrospondigMissingError.code +")\n}\n\n"
+        varstack.pop()
 
     def stepDownMagic(complextype, twice=False):
         nonlocal validator
@@ -382,7 +386,6 @@ if {VARPATH}.{KEY} != nil {{ return nil }}\n
         complextype.traverse(onleaf, onarray, oncompoundarray, ondict)
         validator = tmp + (ident(ident(validator)) if twice else ident(validator))
         typestack.pop()
-        varstack.pop()
 
     def masterWrap(entry):
         nonlocal validator

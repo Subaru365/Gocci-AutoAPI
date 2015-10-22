@@ -86,31 +86,29 @@ class URIToken:
         self.errors.append(p.corrospondigMalformError)
 
 
-    def autoGenerateMissingErrorForOneResponse(self, r):
+    def autoGenerateMissingErrorForOneResponse(self, r, epath):
         msg = "Response '"+ r.key +"' was not received"
-        r.corrospondigMissingError = ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MISSING", msg)
+        r.corrospondigMissingError = ErrorToken("ERROR_RESPONSE_" + epath + "_" + r.key.upper() + "_MISSING", msg)
         self.errors.append(r.corrospondigMissingError)
 
-    def autoGenerateMalformErrorForOneResponse(self, r):
+    def autoGenerateMalformErrorForOneResponse(self, r, epath):
         msg = "Response '"+ r.key +"' is malformed. Should correspond to '"+ r.regex +"'"
-        r.corrospondigMalformError = ErrorToken("ERROR_RESPONSE_" + r.key.upper() + "_MALFORMED", msg)
+        r.corrospondigMalformError = ErrorToken("ERROR_RESPONSE_" + epath + "_" + r.key.upper() + "_MALFORMED", msg)
         self.errors.append(r.corrospondigMalformError)
 
     def autoGenerateMalformErrorsForAllResponses(self, resps):
-        def onleaf(l):
-            self.autoGenerateMissingErrorForOneResponse(l)
-            self.autoGenerateMalformErrorForOneResponse(l)
-        def onarray(l):
-            self.autoGenerateMissingErrorForOneResponse(l)
-            self.autoGenerateMalformErrorForOneResponse(l)
-        def ondict(l):
-            self.autoGenerateMissingErrorForOneResponse(l)
-            l.traverse(onleaf, onarray, oncompoundarray, ondict)
-        def oncompoundarray(l):
-            self.autoGenerateMissingErrorForOneResponse(l)
-            l.traverse(onleaf, onarray, oncompoundarray, ondict)
+        def onsimple(l):
+            self.autoGenerateMissingErrorForOneResponse(l, "_".join(keystack))
+            self.autoGenerateMalformErrorForOneResponse(l, "_".join(keystack))
+        def oncomplex(l):
+            self.autoGenerateMissingErrorForOneResponse(l, "_".join(keystack))
+            keystack.append(l.key.upper())
+            l.traverse(onsimple, onsimple, oncomplex, oncomplex)
+            keystack.pop()
 
-        resps.traverse(onleaf, onarray, oncompoundarray, ondict)
+
+        keystack = []
+        resps.traverse(onsimple, onsimple, oncomplex, oncomplex)
 
     def autoGenerateMalformErrors(self):
         self.onlyExclusiveErrors = list(self.errors)
