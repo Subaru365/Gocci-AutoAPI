@@ -175,19 +175,17 @@ func validateParameterPairs() -> [String: String]? {\n
     post = "\n    return res\n}\n"
     template = """
 if let {PARA} = parameters.{PARA} {{
-    if let {PARA} = parameters.{PARA} where !APISupport.matches({PARA}, re: {REGEX}) {{
-        let emsg = {EMMAL}
-        self.localErrorMapping[.{ECODE}]?(.{ECODE}, emsg)
-        return nil
+    if APISupport.matches({PARA}, re: {REGEX}) {{
+        res["{PARA}"] = {PARA}
     }}
     else {{
-        res["{PARA}"] = {PARA}
+        handleLocalError(.{ECODE})
+        return nil
     }}
 }}"""
     optional_template = """
 else {{
-    let emsg = {EMMIS} 
-    self.localErrorMapping[.{ECODE}]?(.{ECODE}, emsg)
+    handleLocalError(.{ECODE})
     return nil
 }}
 """
