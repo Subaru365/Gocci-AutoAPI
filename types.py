@@ -45,6 +45,7 @@ class URIToken:
         self.parameters = []
         self.responses = ResponseDictonaryToken("dummy for URIs with no responses", 0)
         self.errors = []
+        self.onlyExclusiveErrors = []
 
     def __str__(self):
         res = "URI Path: " + self.path
@@ -61,6 +62,9 @@ class URIToken:
 
     def pathComponents(self):
         return self.path[1:].split("/")
+
+    def absolutePath(self):
+        return self.pathComponents()[-1]
 
     def addError(self, x):
         self.errors.append(x)
@@ -109,6 +113,7 @@ class URIToken:
         resps.traverse(onleaf, onarray, oncompoundarray, ondict)
 
     def autoGenerateMalformErrors(self):
+        self.onlyExclusiveErrors = list(self.errors)
         for p in self.parameters:
             self.autoGenerateErrorsForOneParameter(p)
         self.autoGenerateMalformErrorsForAllResponses(self.responses)
@@ -151,14 +156,14 @@ class ResponseArrayToken(AbstractResponse):
 class ResponseDictonaryToken(AbstractResponse):
     def __init__(self, key, level):
         super().__init__(key)
-        self.leafes = []
+        self.leafs = []
         self.identlevel = level
 
     def add(self, a):
-        self.leafes.append(a)
+        self.leafs.append(a)
 
     def recursive_traverse(self, onleaf, onarray):
-        for resp in self.leafes:
+        for resp in self.leafs:
             if type(resp) is ResponseToken:
                 onleaf(resp)
             elif type(resp) is ResponseArrayToken:
@@ -170,7 +175,7 @@ class ResponseDictonaryToken(AbstractResponse):
 
     # def traverse(self, onleaf=lambda x:x, onarray=lambda x:x, onenterarray=lambda x:x, onleavearray=lambda x:x, onenterdict=lambda x:x, onleavedict=lambda x:x)
     def traverse(self, onleaf=lambda x:x, onarray=lambda x:x, oncompoundarray=lambda x:x, ondict=lambda x:x):
-        for resp in self.leafes:
+        for resp in self.leafs:
             if type(resp) is ResponseToken:
                 onleaf(resp)
             elif type(resp) is ResponseArrayToken:
@@ -181,11 +186,11 @@ class ResponseDictonaryToken(AbstractResponse):
                 ondict(resp)
 
     def __iter__(self):
-        return iter(self.leafes)
+        return iter(self.leafs)
 
     def __str__(self):
         res = "DICTONARY NAMED " + self.key + ":"
-        for r in self.leafes:
+        for r in self.leafs:
             res += "\n"+ ("    "*self.identlevel) + str(r)
         return res
 
@@ -193,14 +198,14 @@ class ResponseArrayCompoundToken(AbstractResponse):
     def __init__(self, key, level, itemcount = None):
         super().__init__(key)
         self.itemcount = itemcount
-        self.leafes = []
+        self.leafs = []
         self.identlevel = level
 
     def add(self, a):
-        self.leafes.append(a)
+        self.leafs.append(a)
 
     def recursive_traverse(self, onleaf, onarray):
-        for resp in self.leafes:
+        for resp in self.leafs:
             if type(resp) is ResponseToken:
                 onleaf(resp)
             elif type(resp) is ResponseArrayToken:
@@ -211,7 +216,7 @@ class ResponseArrayCompoundToken(AbstractResponse):
                 resp.recursive_traverse(onleaf, onarray)
 
     def traverse(self, onleaf=lambda x:x, onarray=lambda x:x, oncompoundarray=lambda x:x, ondict=lambda x:x):
-        for resp in self.leafes:
+        for resp in self.leafs:
             if type(resp) is ResponseToken:
                 onleaf(resp)
             elif type(resp) is ResponseArrayToken:
@@ -222,11 +227,11 @@ class ResponseArrayCompoundToken(AbstractResponse):
                 ondict(resp)
 
     def __iter__(self):
-        return iter(self.leafes)
+        return iter(self.leafs)
 
     def __str__(self):
         res = "ARRAY OF SUBSTRUCTURE " + self.key + ":"
-        for r in self.leafes:
+        for r in self.leafs:
             res += "\n"+ ("    "*self.identlevel) + str(r)
         return res
 
