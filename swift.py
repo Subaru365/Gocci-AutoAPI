@@ -1,14 +1,9 @@
 
-
 import types
 import textwrap
 from util import *
 
-
-
-
 def generate(everything):
-    
     
 
     # everything.uriTokens.reverse()
@@ -58,7 +53,7 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
 
     def onURIToken(uri, nodeName):
         res  = "let apipath = " + stringify(uri.path) + "\n\n"
-        res += "".join([ "var "+ x.key +": String?\n" for x in uri.parameters ]) + "\n"
+        res += generateParameterClass(uri.parameters) + "\n\n"
         res += "var localErrorMapping: [LocalCode: (LocalCode, String)->()] = [:]\n\n"
         res += "var onUnhandledError: (LocalCode, String)->() = { print(\"FATAL: UNHANDLED API ERROR: \($0): \($1)\") }\n\n"
         res += generateEnum("LocalCode", [ e.code for e in uri.errors ] ) + "\n\n"
@@ -92,7 +87,6 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
                 classet += "class {CN} {{\n\n{CODE} }}\n\n".format(CN=node, CODE=code)
             elif type(v) is types.URIToken:
                 classet += wrapInClass(node, onURIToken(v, node), "APIRequestProtocol") + "\n"
-                # classet += wrapInClass(node, onURIToken(v, node)) + "\n"
         return classet
 
     swift_subClasses = subClassBuilder(uriTree)
@@ -156,6 +150,10 @@ def generateSubCodeReverseLookUpTable(varname, codes):
         res += "    res["+ stringify(code) +"] = ." + code + "\n"
     return res + "    return res\n}()\n"
 
+def generateParameterClass(parameters):
+    res = "".join([ "var "+ x.key +": String?\n" for x in parameters ]) + "\n"
+    return wrapInClass("InternalParameterClass", res) + "\nlet parameters = InternalParameterClass()\n"
+
 
 def generateHandyErrorOnGlobal(ecodes):
     template = """
@@ -176,8 +174,8 @@ func validateParameterPairs() -> [String: String]? {\n
     var res: [String: String] = [:]\n\n"""
     post = "\n    return res\n}\n"
     template = """
-if let {PARA} = self.{PARA} {{
-    if let {PARA} = self.{PARA} where !APISupport.matches({PARA}, re: {REGEX}) {{
+if let {PARA} = parameters.{PARA} {{
+    if let {PARA} = parameters.{PARA} where !APISupport.matches({PARA}, re: {REGEX}) {{
         let emsg = {EMMAL}
         self.localErrorMapping[.{ECODE}]?(.{ECODE}, emsg)
         return nil
