@@ -154,6 +154,43 @@ ERR ERROR_SNS_PROVIDER_TOKEN_NOT_VALID "The provided sns token is invalid or has
 ERR ERROR_PROVIDER_UNREACHABLE "The providers server infrastructure appears to be down"
 
 
+############################################################################################
+URI /get/heatmapdata
+############################################################################################
+RES ARRAY heatmapdata
+    RES restaurant_id   "[0-9]+"
+    RES restaurant_name ".{0,100}"
+    RES latitude 		"^\d{1,3}\.\d{1,20}$"
+    RES longitude 		"^\d{1,3}\.\d{1,20}$"
+RES ARRAY END
+############################################################################################
+# Should produce JSON like this:
+#{
+#    "heatmapdata": [
+#        {
+#            "restaurant_id": 222,
+#            "restaurant_name": "lui's best",
+#            "latitude": 123.456789,
+#            "longitude": 123.456789
+#        },
+#        {
+#            "restaurant_id": 223,
+#            "restaurant_name": "peter's worst",
+#            "latitude": 123.456789,
+#            "longitude": 123.456789
+#        },
+#        {
+#            "restaurant_id": 223,
+#            "restaurant_name": "steven's avarage",
+#            "latitude": 123.456789,
+#            "longitude": 123.456789
+#        }
+#    ]
+#}
+
+
+
+
 
 
 

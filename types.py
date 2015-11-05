@@ -87,13 +87,17 @@ class URIToken:
 
 
     def autoGenerateMissingErrorForOneResponse(self, r, epath):
+        if len(epath) > 0:
+            epath = "_" + epath
         msg = "Response '"+ r.key +"' was not received"
-        r.corrospondigMissingError = ErrorToken("ERROR_RESPONSE_" + epath + "_" + r.key.upper() + "_MISSING", msg)
+        r.corrospondigMissingError = ErrorToken("ERROR_RESPONSE" + epath + "_" + r.key.upper() + "_MISSING", msg)
         self.errors.append(r.corrospondigMissingError)
 
     def autoGenerateMalformErrorForOneResponse(self, r, epath):
+        if len(epath) > 0:
+            epath = "_" + epath
         msg = "Response '"+ r.key +"' is malformed. Should correspond to '"+ r.regex +"'"
-        r.corrospondigMalformError = ErrorToken("ERROR_RESPONSE_" + epath + "_" + r.key.upper() + "_MALFORMED", msg)
+        r.corrospondigMalformError = ErrorToken("ERROR_RESPONSE" + epath + "_" + r.key.upper() + "_MALFORMED", msg)
         self.errors.append(r.corrospondigMalformError)
 
     def autoGenerateMalformErrorsForAllResponses(self, resps):
