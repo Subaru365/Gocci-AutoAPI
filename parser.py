@@ -27,17 +27,13 @@ def parseLineOrErrorOut(regex, line, emsg):
         else:
             die(emsg + " does not correspond to regex: '"+regex+"'\nFailed on Line: '" + line + "'")
 
+def parseParameterLine(line):
+    so = parseLineOrErrorOut(r'^PAR\s+(OPT\s+)?([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: PAR Parameter")
+    return ParameterToken(key = so.group(2), re = so.group(3), optional = so.group(1) != None)
 
-def parseUriLine(line):
-    if line.startswith("PAR"):
-        so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: PAR Parameter")
-        return ParameterToken(so.group(1), so.group(2))
-    # elif line.startswith("RES"):
-        # so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
-        # return ResponseToken(so.group(1), so.group(2))
-    elif line.startswith("ERR"):
-        so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
-        return ErrorToken(so.group(1), so.group(2))
+def parseErrorLine(line):
+    so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
+    return ErrorToken(so.group(1), so.group(2))
 
 def parseGlobalError(line):
     so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
@@ -54,10 +50,21 @@ def parseResponseLine(firstline, lineiterator, level=1):
     if firstline.startswith("RES DICT"):
         return parseResponseDictonary(firstline, lineiterator, level)
     elif firstline.startswith("RES"):
-        so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+"(.+)"$', firstline, "PARSING ERROR: RES Response")
-        return ResponseToken(so.group(1), so.group(2))
+        return parseResponseSimple(firstline)
     else:
         die("PARSING ERROR: Response parsing failed on deepest level. This is not valid:\nERROR Line: " + firstline)
+
+def parseResponseSimple(line):
+        # so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
+        so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+(BOOLEAN|FLOAT|INTEGER|".+")$', line, "PARSING ERROR: RES Response")
+        if so.group(2) == "INTEGER":
+            return ResponseToken(so.group(1), None, typ=ResponseType.INTEGER)
+        elif so.group(2) == "FLOAT":
+            return ResponseToken(so.group(1), None, typ=ResponseType.FLOAT)
+        elif so.group(2) == "BOOLEAN":
+            return ResponseToken(so.group(1), None, typ=ResponseType.BOOLEAN)
+        else:
+            return ResponseToken(so.group(1), so.group(2), typ=ResponseType.STRING)
 
 def parseResponseArray(line):
     so = parseLineOrErrorOut(r'^RES\s+ARRAY\s+OF\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
@@ -156,14 +163,14 @@ def parse(infile, vmajor, vminor):
         elif line.startswith("PAR"):
             if not uris :
                 die("PARSING ERROR: No parameter definitions in global space allowed. (define them in an URI space)\nERROR Line: " + line)
-            uris[-1].addParameter(parseUriLine(line))
+            uris[-1].addParameter(parseParameterLine(line))
 
         elif line.startswith("RES"):
             if not uris :
                 die("PARSING ERROR: No response definitions in global space allowed. (define them in an URI space)\nERROR Line: " + line)
 
             cleanContend.append(line)
-            uris[-1].addResponse(parseResponseDictonaryTopLevel(cleanContend))
+            uris[-1].setResponseTree(parseResponseDictonaryTopLevel(cleanContend))
 
         elif line.startswith("ERR"):
             if not uris :
@@ -171,7 +178,7 @@ def parse(infile, vmajor, vminor):
                 global_errors.append(parseGlobalError(line))
             else:
                 # URI specific errors
-                uris[-1].addError(parseUriLine(line))
+                uris[-1].addError(parseErrorLine(line))
 
     if aaaversion == None:
         die("The AAA file must contain a version definition in the form of 'VER X.Y'")

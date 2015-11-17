@@ -105,7 +105,7 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
     res += swift_APIClassOtherStuff + "\n\n"
     res += swift_subClasses + "\n\n"
 
-    return header + wrapInClass("API3", res)
+    return header + wrapInClass(masterClassName, res)
 
 
 
@@ -345,12 +345,18 @@ def generateValidatingJSONParser(responses):
 
     def onleaf(leaf):
         nonlocal validator
+        if leaf.typ != types.ResponseType.STRING:
+            validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
+            return
         validator += """{VARPATH}.{KEY} = validateSimpleResponse(json, "{KEY}", {RE},\n     .{MISERR}, .{MALERR})
 if {VARPATH}.{KEY} == nil {{ return nil }}\n
 """.format(VARPATH=".".join(varstack), KEY=leaf.key, RE=regexify(leaf.regex), MISERR=leaf.corrospondigMissingError.code, MALERR=leaf.corrospondigMalformError.code)
 
     def onarray(array):
         nonlocal validator
+        if leaf.typ != types.ResponseType.STRING:
+            validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
+            return
         validator += """if let tmp = validateSimpleArrayResponse(json, "{KEY}", {RE},\n    .{MISERR}, .{MALERR}) {{
     {VARPATH}.{KEY} == tmp\n}}\nelse {{ return nil }}\n
 """.format(VARPATH=".".join(varstack), KEY=array.key, RE=regexify(array.regex), MISERR=array.corrospondigMissingError.code, MALERR=array.corrospondigMalformError.code)

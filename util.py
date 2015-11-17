@@ -5,6 +5,14 @@ import re
 import itertools
 import collections
 
+
+class Enum(set):
+    def __getattr__(self, name):
+        if name in self:
+            return name
+        raise AttributeError
+
+
 def die(m):
     msg(m)
     sys.exit(1)

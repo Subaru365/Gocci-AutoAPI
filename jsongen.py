@@ -16,17 +16,17 @@ def generate(everything):
         res["uris"][uri.path] = { "parameters": {}, "responses": {}, "errors": {} }
 
     for uri in everything.uriTokens:
-        res["uris"][uri.path]["parameters"] = { para.key : para.regex for para in uri.parameters }
+        res["uris"][uri.path]["parameters"] = { para.key : {"regex": para.regex, "optional": para.optional } for para in uri.parameters }
 
     for uri in everything.uriTokens:
         res["uris"][uri.path]["errors"] = { err.code : err.msg for err in uri.errors }
 
     
     def onleaf(leaf):
-        current[leaf.key] = leaf.regex
+        current[leaf.key] = { "regex": leaf.regex, "type": leaf.typ }
 
     def onarray(array):
-        current[array.key] = [array.regex]
+        current[array.key] = [ { "regex": array.regex, "type": array.typ } ]
 
     def oncompoundarray(compoundarray):
         nonlocal current

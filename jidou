@@ -4,7 +4,7 @@ import parser
 import sys
 import getopt
 from util import msg
-from types import Enum
+from util import Enum
 
 import swift
 import java
@@ -15,7 +15,7 @@ import jsongen
 SourceTarget = Enum(["SWIFT", "JAVA", "PHP", "JS", "JSON"])
 
 VERSION_MAJOR=3
-VERSION_MINOR=5
+VERSION_MINOR=6
 VERSION = str(VERSION_MAJOR) + "." + str(VERSION_MINOR)
 
 
@@ -78,8 +78,8 @@ def main(argv):
         source = swift.generate(token_tree)
     elif source_target == SourceTarget.JSON:
         source = jsongen.generate(token_tree)
-    # elif source_target == SourceTarget.JAVA:
-        # source = java.generate(token_tree)
+    elif source_target == SourceTarget.JAVA:
+        source = java.generate(token_tree)
     elif source_target == SourceTarget.PHP:
         source = php.generate(token_tree)
     # elif source_target == SourceTarget.JS

@@ -167,11 +167,13 @@ ERR ERROR_PROVIDER_UNREACHABLE "The providers server infrastructure appears to b
 ############################################################################################
 URI /get/heatmapdata
 ############################################################################################
+PAR OPT user_id 		"^[0-9]+$"
+############################################################################################
 RES ARRAY heatmapdata
-    RES post_rest_id   "[0-9]+"
-    RES restaurant_name ".{0,100}"
-    RES lat		 		"^\d{1,3}\.\d{1,20}$"
-    RES lon 			"^\d{1,3}\.\d{1,20}$"
+    RES post_rest_id        INTEGER
+    RES restaurant_name     ".{0,100}"
+    RES lat		 		    FLOAT
+    RES lon		 		    FLOAT
 RES ARRAY END
 ############################################################################################
 # Should produce JSON like this:

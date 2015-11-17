@@ -1,5 +1,5 @@
 
-
+from util import Enum
 
 class Everything:
     def __init__(self, v, bf, ge, uris):
@@ -58,7 +58,7 @@ class URIToken:
         return res
 
     def normalizedKey(self):
-        return self.path.replace('/', '__')
+        return self.path.replace('/', '_')
 
     def pathComponents(self):
         return self.path[1:].split("/")
@@ -70,7 +70,7 @@ class URIToken:
         self.errors.append(x)
     def addParameter(self, x):
         self.parameters.append(x)
-    def addResponse(self, x):
+    def setResponseTree(self, x):
         self.responses = x
 
 
@@ -96,7 +96,11 @@ class URIToken:
     def autoGenerateMalformErrorForOneResponse(self, r, epath):
         if len(epath) > 0:
             epath = "_" + epath
-        msg = "Response '"+ r.key +"' is malformed. Should correspond to '"+ r.regex +"'"
+        if r.typ != ResponseType.STRING or r.regex == None:
+            msg = "Response '"+ r.key +"' is malformed. It is no a valid '"+ r.typ +"'"
+        else:
+            msg = "Response '"+ r.key +"' is malformed. Should correspond to '"+ r.regex +"'"
+
         r.corrospondigMalformError = ErrorToken("ERROR_RESPONSE" + epath + "_" + r.key.upper() + "_MALFORMED", msg)
         self.errors.append(r.corrospondigMalformError)
 
@@ -120,6 +124,16 @@ class URIToken:
             self.autoGenerateErrorsForOneParameter(p)
         self.autoGenerateMalformErrorsForAllResponses(self.responses)
 
+
+class ErrorToken:
+    def __init__(self, code, msg):
+        self.msg = msg
+        self.code = code
+
+    def __str__(self):
+        return "ERROR: " + self.code +" "+ self.msg
+
+
 class ParameterToken:
     def __init__(self, key, re, optional=False):
         self.key = key
@@ -131,6 +145,11 @@ class ParameterToken:
     def __str__(self):
         return "PARAMETER: " + self.key + " " + self.regex
 
+
+
+
+ResponseType = Enum(["STRING", "INTEGER", "BOOLEAN", "FLOAT"])
+
 class AbstractResponse(object):
     def __init__(self, key):
         self.key = key
@@ -138,18 +157,20 @@ class AbstractResponse(object):
         self.corrospondigMissingError = None
 
 class ResponseToken(AbstractResponse):
-    def __init__(self, key, re):
+    def __init__(self, key, re, typ=ResponseType.STRING):
         super().__init__(key)
-        self.regex = re
+        self.regex = re         # will be NONE if type is not ResponseType.STRING
+        self.typ = typ
 
     def __str__(self):
         return "RESPONSE: " + self.key + " " + self.regex
 
 
 class ResponseArrayToken(AbstractResponse):
-    def __init__(self, key, re, itemcount=None):
+    def __init__(self, key, re, typ=ResponseType.STRING, itemcount=None):
         super().__init__(key)
-        self.regex = re
+        self.regex = re         # will be NONE if type is not ResponseType.STRING
+        self.typ = typ
         self.itemcount = itemcount
 
     def __str__(self):
@@ -237,19 +258,4 @@ class ResponseArrayCompoundToken(AbstractResponse):
             res += "\n"+ ("    "*self.identlevel) + str(r)
         return res
 
-class ErrorToken:
-    def __init__(self, code, msg):
-        self.msg = msg
-        self.code = code
 
-    def __str__(self):
-        return "ERROR: " + self.code +" "+ self.msg
-
-
-
-
-class Enum(set):
-    def __getattr__(self, name):
-        if name in self:
-            return name
-        raise AttributeError
