@@ -5,10 +5,11 @@ TARGET="jidou"
 # PARAMETER="-s -j -p --swift --java --php input_FILE output_FILE"
 # PARAMETER="--java mobile.aaa"
 # PARAMETER="--json tmp.aaa"
-PARAMETER="--swift tmp.aaa"
+# PARAMETER="--swift tmp.aaa"
 # PARAMETER="--swift syntaxtest.aaa"
 # PARAMETER="--swift mobile.aaa"
 # PARAMETER="--php mobile.aaa"
+PARAMETER="--server"
 
 #########################################################################################################################
 #########################################################################################################################
