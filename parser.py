@@ -5,7 +5,7 @@ import re
 import itertools
 
 # Own imports
-from types import *
+from tokens import *
 from util import *
 
 
