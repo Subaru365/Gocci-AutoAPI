@@ -23,7 +23,7 @@ def filterForLinesStartingWith(dirtyContend, filterRegEx):
 def parseLineOrErrorOut(regex, line, emsg):
         so = re.search(regex, line)
         if so:
-            return so 
+            return so
         else:
             die(emsg + " does not correspond to regex: '"+regex+"'\nFailed on Line: '" + line + "'")
 
@@ -109,7 +109,7 @@ def parseResponseDictonary(firstline, iterator, level=1):
             die("PARSING ERROR: Only RES definitions are allowed in a dictonary space\nERROR Line: " + line)
     die("PARSING ERROR: Dictonary definition did not end in 'RES DICT END'\nERROR Line: " + firstline)
 
-# yes this is a little bit hacky 
+# yes this is a little bit hacky
 def parseResponseDictonaryTopLevel(allLines):
     toparse = []
     while len(allLines) != 0:
@@ -132,11 +132,11 @@ def parse(infile, vmajor, vminor):
     cleanContend = filterForLinesStartingWith(content, r'\s*(VER|API|URI|ERR|RES|PAR)')
 
     cleanContend = list(reversed(cleanContend))
-    
+
     uris = []
     global_errors = []
     apidict = APIDict()
-    aaaversion = None 
+    aaaversion = None
 
     while not len(cleanContend) == 0:
         line = cleanContend.pop()

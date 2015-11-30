@@ -8,7 +8,6 @@ TARGET="jidou"
 # PARAMETER="--swift tmp.aaa"
 # PARAMETER="--swift syntaxtest.aaa"
 # PARAMETER="--swift mobile.aaa"
-PARAMETER="--php tmp2.aaa"
 # PARAMETER="--server"
 
 #########################################################################################################################
