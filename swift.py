@@ -1,5 +1,5 @@
 
-import types
+import tokens
 import textwrap
 import datetime
 from util import *
@@ -87,7 +87,7 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
             if type(v) is dict:
                 code = ident(subClassBuilder(v))
                 classet += "class {CN} {{\n\n{CODE} }}\n\n".format(CN=node, CODE=code)
-            elif type(v) is types.URIToken:
+            elif type(v) is tokens.URIToken:
                 classet += wrapInClass(node, onURIToken(v, node), "APIRequestProtocol") + "\n"
         return classet
 
@@ -345,7 +345,7 @@ def generateValidatingJSONParser(responses):
 
     def onleaf(leaf):
         nonlocal validator
-        if leaf.typ != types.ResponseType.STRING:
+        if leaf.typ != tokens.ResponseType.STRING:
             validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
             return
         validator += """{VARPATH}.{KEY} = validateSimpleResponse(json, "{KEY}", {RE},\n     .{MISERR}, .{MALERR})
@@ -354,7 +354,7 @@ if {VARPATH}.{KEY} == nil {{ return nil }}\n
 
     def onarray(array):
         nonlocal validator
-        if leaf.typ != types.ResponseType.STRING:
+        if leaf.typ != tokens.ResponseType.STRING:
             validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
             return
         validator += """if let tmp = validateSimpleArrayResponse(json, "{KEY}", {RE},\n    .{MISERR}, .{MALERR}) {{

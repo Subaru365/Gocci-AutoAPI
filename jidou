@@ -12,6 +12,8 @@ import php
 import javascript
 import jsongen
 
+import server
+
 SourceTarget = Enum(["SWIFT", "JAVA", "PHP", "JS", "JSON"])
 
 VERSION_MAJOR=3
@@ -21,26 +23,35 @@ VERSION = str(VERSION_MAJOR) + "." + str(VERSION_MINOR)
 
 
 def usage():                         
-    msg("Usage:\n\tparser.py [--validate] | [--help] [--swift | --java | --php | --javascript | --json] [input] [output]")
-    msg("\n\tOne and only one source format has to be defined.")
+    msg("\nUsage:\tjidou --help | --validate [AAAFILE] | --LANGUAGE [AAAFILE] [OUTPUT] | --server [AAAFILE]")
+    msg("\n\tDefault aaa input filename:\tmobile.aaa")
+    msg("\tDefault src output filename:\t<stdout>")
     msg("\n\tUse --validate to check the AAA file for syntax errors")
-    msg("\tDefault input  filename: mobile.aaa")
-    msg("\tDefault output filename: <stdout>")
+    msg("\n\tThe --LANG flag supports the following language flags:")
+    msg("\t\tSwift\tlanguage with:\t-s, --swift")
+    msg("\t\tJava\tlanguage with:\t-j, --java")
+    msg("\t\tJSON\tlanguage with:\t-X, --json")
+    msg("\t\tPHP\tlanguage with:\t-p, --php")
+    msg("\t\tJavaScript\tlanguage with:\t-J, --javascript")
+    msg("\n\tUse -S, --server to run a small test server on port 4444")
 
 def main(argv):                         
     try:
-        opts, args = getopt.getopt(argv, "sjphvJX", ["swift", "java", "php", "help", "validate", "javascript", "json"])
+        opts, args = getopt.getopt(argv, "sjphvJXS", ["swift", "java", "php", "help", "validate", "javascript", "json", "server"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
 
     source_target = None 
     validation_only = False
+    run_server = False
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage()
             sys.exit()
+        elif opt in ("-S", "--server"):
+            run_server = True
         elif opt in ("-s", "--swift"):
             source_target=SourceTarget.SWIFT
         elif opt in ("-j", "--java"):
@@ -54,7 +65,7 @@ def main(argv):
         elif opt in ("-v", "--validate"):
             validation_only = True
 
-    if not source_target and not validation_only:
+    if not source_target and not validation_only and not run_server:
         usage()
         sys.exit(2)
 
@@ -68,13 +79,17 @@ def main(argv):
         sys.exit(0)
 
 
-    msg("Generate source code in: " + source_target)
-    msg("Input  file: " + input_filename )
-    msg("Output file: " + output_filename + "\n\n")
+    if not run_server:
+        msg("Generate source code in: " + source_target)
+        msg("Input  file: " + input_filename )
+        msg("Output file: " + output_filename + "\n\n")
 
     token_tree = parser.parse(input_filename, VERSION_MAJOR, VERSION_MINOR)
 
-    if source_target == SourceTarget.SWIFT:
+    if run_server:
+        server.run(4444, token_tree)
+        sys.exit(0)
+    elif source_target == SourceTarget.SWIFT:
         source = swift.generate(token_tree)
     elif source_target == SourceTarget.JSON:
         source = jsongen.generate(token_tree)
