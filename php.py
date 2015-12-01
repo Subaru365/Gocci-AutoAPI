@@ -10,15 +10,14 @@ def generate(everything):
 
     uripaths = [(uri.path, uri.normalizedKey()) for uri in everything.uriTokens]
     # res += generateUriRequestSwitch(uripaths)
-    # res += generateUriResponseSwitch(uripaths, uri.responses)
 
     # res += generateGlobalCodeSwitch("GlobalCode", [e.code for e in everything.globalErrors])
 
 
     for uri in everything.uriTokens:
 
-    #     parameters = [ (para.key, para.regex, para.optional) for para in uri.parameters ]
-    #     res += generateSetRequestParameter(uri.normalizedKey(), parameters)
+        parameters = [ (para.key, para.regex, para.optional) for para in uri.parameters ]
+        res += generateSetRequestParameter(uri.normalizedKey(), parameters)
         res += generateSetResponseParameter(uri.normalizedKey(), uri.responses)
 
 
@@ -42,39 +41,6 @@ def generateUriRequestSwitch(uripaths):
     res += "    break;\n}\n"
 
     return wrapInPivateVoidFunction("setRequestParameter", res)
-
-
-def generateUriResponseSwitch(uripaths, responses):
-
-    def onleaf(leaf):
-        nonlocal payload
-        payload += "1"
-
-    def visitor(className, root):
-        nonlocal payload
-        root.traverse(onleaf)
-        begin   = "$res_params = $this->res_params;\n"
-        end     = "$this->payload = $payload;\n"
-
-    switch = "switch ($this->uri)\n{\n"
-    for (path, normalized) in uripaths:
-
-        tmp =  "case 'v3{KEY}':\n".format(KEY=path)
-        tmp += "    $this->setRes_{KEY}();\n".format(KEY=normalized)
-        tmp += "    break;\n\n"
-
-        payload = ""
-        visitor("Payload", responses)
-        if payload == "":
-            pass
-        else:
-            switch += tmp
-
-    switch += "default:\n"
-    switch += "    Model_V3_Status::getStatus();\n"
-    switch += "    break;\n}\n"
-
-    return wrapInPivateVoidFunction("setRes_" + uriname, switch)
 
 
 def generateSetRequestParameter(uriname, parameters):
