@@ -6,18 +6,21 @@ from util import *
 
 def generate(everything):
 
-    res = "<?php\n"
+    res = "<?php\n\n"
 
     uripaths = [(uri.path, uri.normalizedKey()) for uri in everything.uriTokens]
-    res += generateUriRequestSwitch(uripaths)
-    res += generateUriResponseSwitch(uripaths, uri.responses)
+    # res += generateUriRequestSwitch(uripaths)
+    # res += generateUriResponseSwitch(uripaths, uri.responses)
+
+    # res += generateGlobalCodeSwitch("GlobalCode", [e.code for e in everything.globalErrors])
+
 
     for uri in everything.uriTokens:
 
-        parameters = [ (para.key, para.regex, para.optional) for para in uri.parameters ]
-        res += generateSetRequestParameter(uri.normalizedKey(), parameters)
+    #     parameters = [ (para.key, para.regex, para.optional) for para in uri.parameters ]
+    #     res += generateSetRequestParameter(uri.normalizedKey(), parameters)
+        res += generateSetResponseParameter(uri.normalizedKey(), uri.responses)
 
-        res += generatePayloadType(uri.normalizedKey(), uri.responses)
 
 
     # ggg = [ "auth.php": lomgstring1, "get.php": longstring2]
@@ -26,18 +29,19 @@ def generate(everything):
 
 
 def generateUriRequestSwitch(uripaths):
+
     res = "switch ($this->uri)\n{\n"
+
     for (path, normalized) in uripaths:
         res += "case 'v3{KEY}':\n".format(KEY=path)
-        tmp =  "    $this->getReq_{KEY}();\n".format(KEY=normalized)
-        tmp += "    $this->setReq_{KEY}();\n".format(KEY=normalized)
-        tmp += "    break;\n\n"
-        res += ident(tmp)
+        res += "    $this->setReq_{KEY}();\n".format(KEY=normalized)
+        res += "    break;\n\n"
+
     res += "default:\n"
     res += "    Model_V3_Status::getStatus();\n"
     res += "    break;\n}\n"
 
-    return wrapInVoidFunction("setRequestParameter", res)
+    return wrapInPivateVoidFunction("setRequestParameter", res)
 
 
 def generateUriResponseSwitch(uripaths, responses):
@@ -52,26 +56,25 @@ def generateUriResponseSwitch(uripaths, responses):
         begin   = "$res_params = $this->res_params;\n"
         end     = "$this->payload = $payload;\n"
 
-    payload = ""
-    visitor("Payload", responses)
-
-    begin = "switch ($this->uri)\n{\n"
+    switch = "switch ($this->uri)\n{\n"
     for (path, normalized) in uripaths:
+
+        tmp =  "case 'v3{KEY}':\n".format(KEY=path)
+        tmp += "    $this->setRes_{KEY}();\n".format(KEY=normalized)
+        tmp += "    break;\n\n"
+
         payload = ""
         visitor("Payload", responses)
+        if payload == "":
+            pass
+        else:
+            switch += tmp
 
+    switch += "default:\n"
+    switch += "    Model_V3_Status::getStatus();\n"
+    switch += "    break;\n}\n"
 
-        res += "case 'v3{KEY}':\n".format(KEY=path)
-        tmp =  "    $this->getReq_{KEY}();\n".format(KEY=normalized)
-        tmp += "    $this->setReq_{KEY}();\n".format(KEY=normalized)
-        tmp += "    break;\n\n"
-        res += ident(tmp)
-    end += "default:\n"
-    end += "    Model_V3_Status::getStatus();\n"
-    end += "    break;\n}\n"
-
-    res = "" if payload == "" else wrapInVoidFunction("setRes_" + uriname, begin+payload+end)
-    return wrapInVoidFunction("setRequestParameter", res)
+    return wrapInPivateVoidFunction("setRes_" + uriname, switch)
 
 
 def generateSetRequestParameter(uriname, parameters):
@@ -89,56 +92,35 @@ def generateSetRequestParameter(uriname, parameters):
             res += "$val->add_rule('required');\n"
     res += "$this->val = $val;\n"
 
-    return wrapInVoidFunction("setReq_" + uriname, res)
+    return wrapInPivateVoidFunction("setReq_" + uriname, res)
 
 
-def generatePayloadType(uriname, responses):
+def generateSetResponseParameter(uriname, responses):
 
     def onleaf(leaf):
         nonlocal payload
         payload += "$payload['{KEY}'] => ({TYPE})$res_params['{KEY}'];\n".format(KEY=leaf.key, TYPE=leaf.typ)
-
-        # payload += "$val = $this->val;\n"
-        # payload += "$val->add('{KEY}', '{KEY}');\n".format(KEY=leaf.key)
-        # payload += "$val->add_rule('match_pattern', '/{KEY}/');\n".format(KEY=leaf.regex)
-        # payload += "$this->val = $val;\n\n"
-
-    # def onarray(array, typ="[String] = []"):
-    #     nonlocal payload
-    #     payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=array.key, TYPE=typ)
-
-    # def oncompoundarray(compoundarray):
-    #     # oncomplextype(compoundarray, "[[String: {CLASSNAME}!]] = []", onarray)
-    #     oncomplextype(compoundarray, "[{CLASSNAME}] = []", onarray)
-
-    # def ondict(dictleaf):
-    #     # oncomplextype(dictleaf, "[String: {CLASSNAME}!] = [:]", onleaf)
-    #     oncomplextype(dictleaf, "{CLASSNAME} = {CLASSNAME}()", onleaf)
-
-    # def oncomplextype(complextype, typestr, typegenerator):
-    #     # This is magic^^
-    #     nonlocal payload
-    #     payload += "\n"
-    #     clas = cAmElCaSe(complextype.key)
-    #     typegenerator(complextype, typestr.format(CLASSNAME=clas))
-    #     tmp = payload
-    #     payload = ""
-    #     visitor(clas, complextype)
-    #     payload = tmp + payload
 
     def visitor(className, root):
         nonlocal payload
         root.traverse(onleaf)
         begin   = "$res_params = $this->res_params;\n"
         end     = "$this->payload = $payload;\n"
-        payload = "" if payload == "" else wrapInVoidFunction("setRes_" + uriname, begin+payload+end)
+        payload = "" if payload == "" else wrapInPivateVoidFunction("setRes_" + uriname, begin+payload+end)
 
     payload = ""
     visitor("Payload", responses)
     return payload
 
 
-def wrapInVoidFunction(fname, code):
-    res = "private function {FNAME}()\n{{\n{CODE}}}\n\n".format(FNAME=fname, CODE=ident(code))
-    return res
+def wrapInInterface(cname, code):
+    return "interface {NAME} {{\n{CODE}}}\n\n".format(NAME=cname, CODE=ident(code))
+
+
+def wrapInClass(cname, code):
+    return "class {NAME} {{\n{CODE}}}\n\n".format(NAME=cname, CODE=ident(code))
+
+
+def wrapInPivateVoidFunction(fname, code):
+    return "private function {NAME}()\n{{\n{CODE}}}\n\n".format(NAME=fname, CODE=ident(code))
 
