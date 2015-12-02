@@ -25,10 +25,7 @@ def generate(everything):
 //\n\n\nimport Foundation\n\n\n
 """.format(MCN=masterClassName, DATE=datetime.datetime.now())
 
-    for uri in everything.uriTokens:
-        for para in uri.parameters:
-            para.regex = regexify(para.regex)
-
+    
     swift_intro  = staticLetString("baseurl", stringify(everything.apidict.pairs["baseurl"]))
     swift_intro += staticLetString("testurl", stringify(everything.apidict.pairs["testurl"]))
 
@@ -177,7 +174,7 @@ func validateParameterPairs() -> [String: String]? {\n
     post = "\n    return res\n}\n"
     template = """
 if let {PARA} = parameters.{PARA} {{
-    if APISupport.matches({PARA}, re: {REGEX}) {{
+    if {PARA}.matches({REGEX}) {{
         res["{PARA}"] = {PARA}
     }}
     else {{
@@ -194,7 +191,7 @@ else {{
     res = ""
     for p in uri.parameters:
         errormsg = stringify(p.corrospondigMalformError.msg)
-        res += template.format(PARA=p.key, REGEX=p.regex, ECODE=p.corrospondigMalformError.code, EMMAL=errormsg)
+        res += template.format(PARA=p.key, REGEX=regexify(p.regex), ECODE=p.corrospondigMalformError.code, EMMAL=errormsg)
         if not p.optional:
             errormsg = stringify(p.corrospondigMissingError.msg)
             res += optional_template.format(ECODE=p.corrospondigMissingError.code, EMMIS=errormsg)
@@ -205,14 +202,14 @@ def generateOneParameterRegExCheck(tablename, parameter, regex):
 
     return  """
 if let value = {MAPNAME}["{PARAMETER}"] {{
-    if !APISupport.matches(value, re: {REGEX}) {{
+    if !value.matches({REGEX}) {{
         return API.Code.ERROR_PARAMETER_{PARAMETERUPCASE}_MALFORMED
     }}
 }}
 else {{
     return API.Code.ERROR_PARAMETER_{PARAMETERUPCASE}_MISSING
 }}
-""".format(MAPNAME=tablename, PARAMETER=parameter, REGEX=regex, PARAMETERUPCASE=parameter.upper())
+""".format(MAPNAME=tablename, PARAMETER=parameter, REGEX=regexify(regex), PARAMETERUPCASE=parameter.upper())
 
 
 def otherStuffThatIsNeededButStatic(absolutPath):
@@ -239,7 +236,7 @@ func handleLocalError(code: LocalCode, _ mmsg: String? = nil) {{
 
 func validateSimpleResponse(json: [String: AnyObject], _ value: String, _ regex: String, _ misErr: LocalCode, _ malErr: LocalCode ) -> String? {{
     if let value = (json as? [String: String])?[value] {{
-        if !APISupport.matches(value, re: regex) {{
+        if !value.matches(regex) {{
             handleLocalError(malErr)
             return nil
         }}
@@ -257,7 +254,7 @@ func validateSimpleArrayResponse(json: [String: AnyObject], _ value: String, _ r
     if let values = (json as? [String: [String!]])?[value] {{
         var res: [String] = []
         for value in values {{
-            if !APISupport.matches(value, re: regex) {{
+            if !value.matches(regex) {{
                 handleLocalError(malErr)
                 return nil
             }}

@@ -64,7 +64,7 @@ def parseResponseSimple(line):
         elif so.group(2) == "BOOLEAN":
             return ResponseToken(so.group(1), None, typ=ResponseType.BOOLEAN)
         else:
-            return ResponseToken(so.group(1), so.group(2), typ=ResponseType.STRING)
+            return ResponseToken(so.group(1), so.group(2)[1:-1], typ=ResponseType.STRING)
 
 def parseResponseArray(line):
     so = parseLineOrErrorOut(r'^RES\s+ARRAY\s+OF\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
