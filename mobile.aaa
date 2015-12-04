@@ -55,7 +55,6 @@ PAR identity_id 	"^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$"
 RES user_id 		"^[0-9]+$"
 RES username 		"^[\S\s]{2,20}$"
 RES profile_img 	"^http\S+$"
-RES identity_id 	"^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$"
 RES badge_num 		"^[0-9]+$"
 RES cognito_token 	"^[a-zA-Z0-9_.-]{400,2200}$"
 ############################################################################################
@@ -63,73 +62,41 @@ ERR ERROR_IDENTITY_ID_NOT_REGISTERD "The provided identity_id is not bound to an
 
 
 ############################################################################################
-URI /auth/check
+URI /post/register_device_token
 ############################################################################################
-PAR register_id 	"^([a-f0-9]{64})|([a-zA-Z0-9:_-]{140,250})$"
+PAR device_token 	"^([a-f0-9]{64})|([a-zA-Z0-9:_-]{140,250})$"
+PAR os 				"^android$|^iOS$"
+PAR ver 			"^[0-9.]{0,6}$"
+PAR model 			"^[\S\s]{0,50}$"
 ############################################################################################
 
+
 ############################################################################################
-ERR ERROR_REGISTER_ID_ALREADY_REGISTERD "This deviced already has an registerd account"
+URI /post/unregister_device_token
+############################################################################################
+PAR device_token 	"^([a-f0-9]{64})|([a-zA-Z0-9:_-]{140,250})$"
+############################################################################################
 
 
 ############################################################################################
 URI /auth/signup
 ############################################################################################
 PAR username 		"^[\S\s]{2,20}$"
-PAR os 				"^android$|^iOS$"
-PAR ver 			"^[0-9.]{0,6}$"
-PAR model 			"^[\S\s]{0,50}$"
-PAR register_id 	"^([a-f0-9]{64})|([a-zA-Z0-9:_-]{140,250})$"
 ############################################################################################
-RES user_id 		"^[0-9]+$"
-RES username 		"^[\S\s]{2,20}$"
-RES profile_img 	"^http\S+$"
 RES identity_id 	"^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$"
-RES badge_num 		"^[0-9]+$"
-RES cognito_token   "^[a-zA-Z0-9_.-]{400,2200}$"
 ############################################################################################
 ERR ERROR_REGISTER_ID_ALREADY_REGISTERD "This deviced already has an registerd other account"
 ERR ERROR_USERNAME_ALREADY_REGISTERD 	"The provided username was already registerd by another user"
 
 
 ############################################################################################
-URI /auth/sns_login
-############################################################################################
-PAR identity_id 	"^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$"
-PAR os 				"^android$|^iOS$"
-PAR ver 			"^[0-9.]{0,6}$"
-PAR model 			"^[\S\s]{0,50}$"
-PAR register_id		"^([a-f0-9]{64})|([a-zA-Z0-9:_-]{140,250})$"
-############################################################################################
-RES user_id 		"^[0-9]+$"
-RES username 		"^[\S\s]{2,20}$"
-RES profile_img 	"^http\S+$"
-RES identity_id 	"^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$"
-RES badge_num 		"^[0-9]+$"
-RES cognito_token 	"^[a-zA-Z0-9_.-]{400,2200}$"
-############################################################################################
-ERR ERROR_REGISTER_ID_ALREADY_REGISTERD "This deviced already has an registerd other account"
-ERR ERROR_IDENTITY_ID_NOT_REGISTERD "The provided identity_id is not bound to any account"
-
-
-############################################################################################
-URI /auth/pass_login
+URI /auth/password
 ############################################################################################
 PAR username 		"^[\S\s]{2,20}$"
 PAR password 		"^\w{6,25}$"
-PAR os 				"^android$|^iOS$"
-PAR ver 			"^[0-9.]{0,6}$"
-PAR model 			"^[\S\s]{0,50}$"
-PAR register_id		"^([a-f0-9]{64})|([a-zA-Z0-9:_-]{140,250})$"
 ############################################################################################
-RES user_id 		"^[0-9]+$"
-RES username 		"^[\S\s]{2,20}$"
-RES profile_img 	"^http\S+$"
 RES identity_id 	"^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$"
-RES badge_num 		"^[0-9]+$"
-RES cognito_token 	"^[a-zA-Z0-9_.-]{400,2200}$"
 ############################################################################################
-ERR ERROR_REGISTER_ID_ALREADY_REGISTERD "This deviced already has an registerd other account"
 ERR ERROR_USERNAME_NOT_REGISTERD "The entered username does not exist"
 ERR ERROR_PASSWORD_NOT_REGISTERD "The entered password does not exist"
 ERR ERROR_PASSWORD_WRONG "Password wrong"
