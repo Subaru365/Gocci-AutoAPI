@@ -157,6 +157,7 @@ def wrapInInterface(classname, code):
 def wrapInClass(classname, code):
     return "class {NAME} {{\n{CODE}}}".format(NAME=classname, CODE=ident(code))
 
+
 def implClassWithImpl(code):
     return """class Impl implements API3Test {
         private static Impl sAPI3;
@@ -219,31 +220,45 @@ def generateResponseCallbackInInterface(path):
     res = "\tvoid onSuccess(); \n\n\tvoid onGlobalError(Util.GlobalCode globalCode); \n\n\tvoid onLocalError(String errorMessage);"
     return wrapInInterface(methodName, res)
 
+
 def generateGetAPI(path, parameters):
     methodName = path.title().replace('/', "_")
     tmp = ["String " + s.key for s in parameters]
-    res  = "public static String get" + cAmElCaSe(methodName) + "API(" + ", ".join(tmp) + ") {\n"
+    res = "public static String get" + cAmElCaSe(methodName) + "API(" + ", ".join(tmp) + ") {\n"
     res += "\treturn testurl + " + stringify(path + "/")
     if len(tmp) > 0:
-        line = " + ".join([ "\"&"+ p.key + "=\" + " + p.key for p in parameters ])
+        line = " + ".join(["\"&" + p.key + "=\" + " + p.key for p in parameters])
         res += " + \"?" + line[2:]
     return res + ";\n}"
+
 
 def generateParameterRegexInImpl(path, parameters):
     localCode = path.title().replace('/', "") + "LocalCode"
     tmp = ["String " + s.key for s in parameters]
-    return "@Override\npublic Util." + localCode + " " + path.title().replace('/', '') + "ParameterRegex(" + ", ".join(tmp) + ") {\nreturn null;\n}"
+    res = "@Override\npublic Util." + localCode + " " + path.title().replace('/', '') + "ParameterRegex(" + ", ".join(
+        tmp) + ") {\n"
+    template = """if ({PARA} != null) {{
+                if (!{PARA}.matches({REGEX})) {{
+                    return Util.{LOCALCODE}.{MALERROR};
+                }}
+            }}"""
+    optional_template = """ else {{
+                return Util.{LOCALCODE}.{MISERROR};
+            }}"""
+    for p in parameters:
+        res += template.format(PARA=p.key, REGEX=p.regex, LOCALCODE=localCode, MALERROR=p.corrospondigMalformError.code)
+        if not p.optional:
+            res += optional_template.format(LOCALCODE=localCode, MISERROR= p.corrospondigMissingError.code)
+    return ident(res) + "return null;}"
 
 
 def generateResponseRegexInImpl(path, parameters):
     localCode = path.title().replace('/', "") + "LocalCode"
     tmp = ["String " + s.key for s in parameters]
-    return "@Override\npublic Util." + localCode + " " + path.title().replace('/', '') + "ResponseRegex(" + ", ".join(tmp) + ") {\nreturn null;\n}"
+    return "@Override\npublic Util." + localCode + " " + path.title().replace('/', '') + "ResponseRegex(" + ", ".join(
+        tmp) + ") {\nreturn null;\n}"
 
 
 def generateResponseInImpl(path):
     methodName = path.title().replace('/', "") + "Response"
     return "@Override\npublic void " + methodName + "(JSONObject jsonObject, " + methodName + "Callback cb) {\n}"
-
-
-
