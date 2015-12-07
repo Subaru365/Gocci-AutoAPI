@@ -84,9 +84,52 @@ def generate(everything):
     res2 = "Util.GlobalCode check_global_error();\n"
     res2 += java_regexInterface + "\n"
     res2 += util + "\n"
-    res2 += implClassWithImpl()
 
-    return "package com.inase.android.gocci.datasource.api;\n\nimport org.json.JSONObject;\n\nimport java.util.Map;\nimport java.util.concurrent.ConcurrentHashMap;\n\n" + wrapInInterface(
+    def onURIImpl(uri):
+
+        res = generateParameterRegexInImpl(uri.path, uri.parameters) + "\n\n"
+        res += generateResponseRegexInImpl(uri.path, uri.parameters) + "\n\n"
+        res += generateResponseInImpl(uri.path) + "\n\n"
+
+        return res
+
+    def implRegexBuilder(eda):
+        classet = ""
+        for node, v in eda.items():
+            if type(v) is dict:
+                classet += implRegexBuilder(v)
+            elif type(v) is tokens.URIToken:
+                classet += onURIImpl(v)
+        return classet
+
+    java_regexImpl = implRegexBuilder(uriTree)
+    java_regexImpl += """@Override
+        public Util.GlobalCode check_global_error() {
+            if (com.inase.android.gocci.utils.Util.getConnectedState(Application_Gocci.getInstance().getApplicationContext()) == com.inase.android.gocci.utils.Util.NetworkStatus.OFF) {
+                return Util.GlobalCode.ERROR_NO_INTERNET_CONNECTION;
+            }
+            return Util.GlobalCode.SUCCESS;
+        }"""
+
+    res2 += implClassWithImpl(java_regexImpl)
+
+    return """package com.inase.android.gocci.datasource.api;
+
+import com.inase.android.gocci.Application_Gocci;
+import com.inase.android.gocci.domain.model.HeaderData;
+import com.inase.android.gocci.domain.model.ListGetData;
+import com.inase.android.gocci.domain.model.PostData;
+import com.inase.android.gocci.domain.model.TwoCellData;
+import com.inase.android.gocci.utils.SavedData;
+import com.inase.android.gocci.utils.map.HeatmapLog;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;\n\n""" + wrapInInterface(
         "API3Test", res2)
 
 
@@ -114,9 +157,19 @@ def wrapInInterface(classname, code):
 def wrapInClass(classname, code):
     return "class {NAME} {{\n{CODE}}}".format(NAME=classname, CODE=ident(code))
 
-def implClassWithImpl():
-    return "class Impl implements API3 {\n\tprivate static Impl sAPI3;\n\n\tpublic Impl() {}" \
-           "\n\n\tpublic static Impl getRepository() {\n\t\tif(sAPI3 == null) {\n\t\t\tsAPI3 = new Impl();\n}\nreturn sAPI3;\n}\n}"
+def implClassWithImpl(code):
+    return """class Impl implements API3Test {
+        private static Impl sAPI3;
+
+        public Impl() {
+        }
+
+        public static Impl getRepository() {
+            if (sAPI3 == null) {
+                sAPI3 = new Impl();
+            }
+            return sAPI3;
+        }\n""" + code + "}"
 
 
 def generateEnum(enumname, items):
@@ -175,5 +228,22 @@ def generateGetAPI(path, parameters):
         line = " + ".join([ "\"&"+ p.key + "=\" + " + p.key for p in parameters ])
         res += " + \"?" + line[2:]
     return res + ";\n}"
+
+def generateParameterRegexInImpl(path, parameters):
+    localCode = path.title().replace('/', "") + "LocalCode"
+    tmp = ["String " + s.key for s in parameters]
+    return "@Override\npublic Util." + localCode + " " + path.title().replace('/', '') + "ParameterRegex(" + ", ".join(tmp) + ") {\nreturn null;\n}"
+
+
+def generateResponseRegexInImpl(path, parameters):
+    localCode = path.title().replace('/', "") + "LocalCode"
+    tmp = ["String " + s.key for s in parameters]
+    return "@Override\npublic Util." + localCode + " " + path.title().replace('/', '') + "ResponseRegex(" + ", ".join(tmp) + ") {\nreturn null;\n}"
+
+
+def generateResponseInImpl(path):
+    methodName = path.title().replace('/', "") + "Response"
+    return "@Override\npublic void " + methodName + "(JSONObject jsonObject, " + methodName + "Callback cb) {\n}"
+
 
 
