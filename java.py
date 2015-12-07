@@ -24,44 +24,70 @@ def generate(everything):
 
     uriTree = everything.transformURITokensFromFlatArrayToTreeStructureBasedOnTheirPath()
 
-    def onURIToken(uri):
-        localCode = uri.path.replace('/', "") + "LocalCode"
+    def onURITable(uri):
+        localCode = uri.path.title().replace('/', "") + "LocalCode"
 
         res = staticFinalHashMap(localCode) + "\n"
-        res += generateEnum(localCode, [e.code for e in uri.errors]) + "\n"
+
+        res += generateGetAPI(uri.path, uri.parameters) + "\n\n"
+
+        res += generateEnum(localCode, [e.code for e in uri.errors]) + "\n\n"
 
         tmp = {e.code: stringify(e.msg) for e in uri.errors}
-        res += generateErrorMsgTable(localCode, tmp) + "\n"
+        res += generateErrorMsgTable(localCode, tmp) + "\n\n"
 
         tmp = {e.code: e.code for e in uri.errors}
-        res += generateCodeReverseLookUpTable(localCode, tmp) + "\n"
+        res += generateCodeReverseLookUpTable(localCode, tmp) + "\n\n"
 
         return res
 
-    def subClassBuilder(eda):
+    def utilLocalCodeBuilder(eda):
         classet = ""
         for node, v in eda.items():
             if type(v) is dict:
-                classet += ident(subClassBuilder(v)) + "\n"
+                classet += ident(utilLocalCodeBuilder(v))
             elif type(v) is tokens.URIToken:
-                classet += onURIToken(v) + "\n"
+                classet += onURITable(v)
         return classet
 
-    java_subClasses = subClassBuilder(uriTree)
+    java_subClasses = utilLocalCodeBuilder(uriTree)
 
-    # def sortarray(ar):
-    # allcodes = list(ar.keys())
-    # allcodes.sort(reverse=True)
+    def onURIRegex(uri):
+
+        res = generateParameterRegexInInterface(uri.path, uri.parameters) + "\n\n"
+        res += generateResponseRegexInInterface(uri.path, uri.parameters) + "\n\n"
+        res += generateResponseInInterface(uri.path) + "\n\n"
+        res += generateResponseCallbackInInterface(uri.path) + "\n"
+
+        return res
+
+    def utilRegexBuilder(eda):
+        classet = ""
+        for node, v in eda.items():
+            if type(v) is dict:
+                classet += utilRegexBuilder(v)
+            elif type(v) is tokens.URIToken:
+                classet += onURIRegex(v)
+        return classet
+
+    java_regexInterface = utilRegexBuilder(uriTree)
 
     res = java_intro + "\n"
     res += java_globalHashMap + "\n"
     res += java_allErrorsAsEnum + "\n"
     res += java_codeReverseLookUpTable + "\n"
     res += java_allErrorMessages + "\n"
-    res += java_subClasses + "\n"
+    res += java_subClasses
 
-    return "package com.inase.android.gocci.datasource.api;\n\nimport java.util.Map;\nimport java.util.concurrent.ConcurrentHashMap;\n\n" + wrapInClass(
-        "Util", res)
+    util = wrapInClass("Util", res)
+
+    res2 = "Util.GlobalCode check_global_error();\n"
+    res2 += java_regexInterface + "\n"
+    res2 += util + "\n"
+    res2 += implClassWithImpl()
+
+    return "package com.inase.android.gocci.datasource.api;\n\nimport org.json.JSONObject;\n\nimport java.util.Map;\nimport java.util.concurrent.ConcurrentHashMap;\n\n" + wrapInInterface(
+        "API3Test", res2)
 
 
 def staticFinalString(varname, value):
@@ -82,11 +108,15 @@ def generateParameterGetter(APIName, path, parameters):
 
 
 def wrapInInterface(classname, code):
-    return "interface {NAME} {{\n{CODE}}}\n".format(NAME=classname, CODE=ident(code))
+    return "interface {NAME} {{\n{CODE}}}".format(NAME=classname, CODE=ident(code))
 
 
 def wrapInClass(classname, code):
-    return "public class {NAME} {{\n{CODE}}}\n".format(NAME=classname, CODE=ident(code))
+    return "class {NAME} {{\n{CODE}}}".format(NAME=classname, CODE=ident(code))
+
+def implClassWithImpl():
+    return "class Impl implements API3 {\n\tprivate static Impl sAPI3;\n\n\tpublic Impl() {}" \
+           "\n\n\tpublic static Impl getRepository() {\n\t\tif(sAPI3 == null) {\n\t\t\tsAPI3 = new Impl();\n}\nreturn sAPI3;\n}\n}"
 
 
 def generateEnum(enumname, items):
@@ -112,3 +142,38 @@ def generateCodeReverseLookUpTable(localCode, codes):
     res += "\n\t}\n\t\t" + localCode + " code = null;\n\t\tfor(Map.Entry<String, " + localCode + "> entry : " + localCode + "ReverseMap.entrySet()) {\n\t\t\t" \
                                                                                                                             "if(entry.getKey().equals(message)) {\n\t\t\t\tcode = entry.getValue();\n\t\t\t\tbreak;\n}\n}\nreturn code;\n}"
     return res
+
+
+def generateParameterRegexInInterface(path, parameters):
+    localCode = path.title().replace('/', "") + "LocalCode"
+    tmp = ["String " + s.key for s in parameters]
+    return "Util." + localCode + " " + path.title().replace('/', '') + "ParameterRegex(" + ", ".join(tmp) + ");"
+
+
+def generateResponseRegexInInterface(path, parameters):
+    localCode = path.title().replace('/', "") + "LocalCode"
+    tmp = ["String " + s.key for s in parameters]
+    return "Util." + localCode + " " + path.title().replace('/', '') + "ResponseRegex(" + ", ".join(tmp) + ");"
+
+
+def generateResponseInInterface(path):
+    methodName = path.title().replace('/', "") + "Response"
+    return "void " + methodName + "(JSONObject jsonObject, " + methodName + "Callback cb);"
+
+
+def generateResponseCallbackInInterface(path):
+    methodName = path.title().replace('/', "") + "ResponseCallback"
+    res = "\tvoid onSuccess(); \n\n\tvoid onGlobalError(Util.GlobalCode globalCode); \n\n\tvoid onLocalError(String errorMessage);"
+    return wrapInInterface(methodName, res)
+
+def generateGetAPI(path, parameters):
+    methodName = path.title().replace('/', "_")
+    tmp = ["String " + s.key for s in parameters]
+    res  = "public static String get" + cAmElCaSe(methodName) + "API(" + ", ".join(tmp) + ") {\n"
+    res += "\treturn testurl + " + stringify(path + "/")
+    if len(tmp) > 0:
+        line = " + ".join([ "\"&"+ p.key + "=\" + " + p.key for p in parameters ])
+        res += " + \"?" + line[2:]
+    return res + ";\n}"
+
+
