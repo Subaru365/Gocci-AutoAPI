@@ -55,9 +55,7 @@ def generate(everything):
     def onURIRegex(uri):
 
         res = generateParameterRegexInInterface(uri.path, uri.parameters) + "\n\n"
-        res += generateResponseRegexInInterface(uri.path, uri.parameters) + "\n\n"
-        res += generateResponseInInterface(uri.path) + "\n\n"
-        res += generateResponseCallbackInInterface(uri.path) + "\n"
+        res += generateResponseInInterface(uri.path) + "\n"
 
         return res
 
@@ -83,12 +81,12 @@ def generate(everything):
 
     res2 = "Util.GlobalCode check_global_error();\n"
     res2 += java_regexInterface + "\n"
+    res2 += generatePayloadResponseCallbackInInterface() + "\n"
     res2 += util + "\n"
 
     def onURIImpl(uri):
 
         res = generateParameterRegexInImpl(uri.path, uri.parameters) + "\n\n"
-        res += generateResponseRegexInImpl(uri.path, uri.parameters) + "\n\n"
         res += generateResponseInImpl(uri.path) + "\n\n"
 
         return res
@@ -116,10 +114,7 @@ def generate(everything):
     return """package com.inase.android.gocci.datasource.api;
 
 import com.inase.android.gocci.Application_Gocci;
-import com.inase.android.gocci.domain.model.HeaderData;
-import com.inase.android.gocci.domain.model.ListGetData;
-import com.inase.android.gocci.domain.model.PostData;
-import com.inase.android.gocci.domain.model.TwoCellData;
+import com.inase.android.gocci.domain.model.Payload;
 import com.inase.android.gocci.utils.SavedData;
 import com.inase.android.gocci.utils.map.HeatmapLog;
 
@@ -203,22 +198,19 @@ def generateParameterRegexInInterface(path, parameters):
     tmp = ["String " + s.key for s in parameters]
     return "Util." + localCode + " " + path.title().replace('/', '') + "ParameterRegex(" + ", ".join(tmp) + ");"
 
-
-def generateResponseRegexInInterface(path, parameters):
-    localCode = path.title().replace('/', "") + "LocalCode"
-    tmp = ["String " + s.key for s in parameters]
-    return "Util." + localCode + " " + path.title().replace('/', '') + "ResponseRegex(" + ", ".join(tmp) + ");"
-
-
 def generateResponseInInterface(path):
     methodName = path.title().replace('/', "") + "Response"
-    return "void " + methodName + "(JSONObject jsonObject, " + methodName + "Callback cb);"
+    return "void " + methodName + "(JSONObject jsonObject, PayloadResponseCallback cb);"
 
 
-def generateResponseCallbackInInterface(path):
-    methodName = path.title().replace('/', "") + "ResponseCallback"
-    res = "\tvoid onSuccess(); \n\n\tvoid onGlobalError(Util.GlobalCode globalCode); \n\n\tvoid onLocalError(String errorMessage);"
-    return wrapInInterface(methodName, res)
+def generatePayloadResponseCallbackInInterface():
+    return """interface PayloadResponseCallback {
+        void onSuccess(JSONObject payload);
+
+        void onGlobalError(Util.GlobalCode globalCode);
+
+        void onLocalError(String errorMessage);
+    }"""
 
 
 def generateGetAPI(path, parameters):
@@ -252,13 +244,40 @@ def generateParameterRegexInImpl(path, parameters):
     return ident(res) + "return null;}"
 
 
-def generateResponseRegexInImpl(path, parameters):
-    localCode = path.title().replace('/', "") + "LocalCode"
-    tmp = ["String " + s.key for s in parameters]
-    return "@Override\npublic Util." + localCode + " " + path.title().replace('/', '') + "ResponseRegex(" + ", ".join(
-        tmp) + ") {\nreturn null;\n}"
-
-
 def generateResponseInImpl(path):
     methodName = path.title().replace('/', "") + "Response"
-    return "@Override\npublic void " + methodName + "(JSONObject jsonObject, " + methodName + "Callback cb) {\n}"
+    return "@Override\npublic void " + methodName + "(JSONObject jsonObject, PayloadResponseCallback cb) {\n"\
+           + generateResponse(path) + "\n}"
+
+def generateResponse(path):
+    localCode = path.title().replace('/', "") + "LocalCode"
+    template = """try {{
+                String version = jsonObject.getString("version");
+                String uri = jsonObject.getString("uri");
+                String code = jsonObject.getString("code");
+                String message = jsonObject.getString("message");
+
+                Util.GlobalCode globalCode = Util.GlobalCodeReverseLookupTable(code);
+                if (globalCode != null) {{
+                    if (globalCode == Util.GlobalCode.SUCCESS) {{
+                        cb.onSuccess(jsonObject.getJSONObject("payload"));
+                    }} else {{
+                        cb.onGlobalError(globalCode);
+                    }}
+                }} else {{
+                    Util.{LOCALCODE} localCode = Util.{LOCALCODE}ReverseLookupTable(code);
+                    if (localCode != null) {{
+                        String errorMessage = Util.{LOCALCODE}MessageTable(localCode);
+                        if (message.equals(errorMessage)) {{
+                            cb.onLocalError(message);
+                        }} else {{
+                            cb.onGlobalError(Util.GlobalCode.ERROR_SERVER_SIDE_FAILURE);
+                        }}
+                    }} else {{
+                        cb.onGlobalError(Util.GlobalCode.ERROR_UNKNOWN_ERROR);
+                    }}
+                }}
+            }} catch (JSONException e) {{
+                cb.onGlobalError(Util.GlobalCode.ERROR_BASEFRAME_JSON_MALFORMED);
+            }}"""
+    return template.format(LOCALCODE=localCode)
