@@ -79,7 +79,7 @@ def generate(everything):
 
     util = wrapInClass("Util", res)
 
-    res2 = "Util.GlobalCode check_global_error();\n"
+    res2 = "Util.GlobalCode CheckGlobalCode();\n"
     res2 += java_regexInterface + "\n"
     res2 += generatePayloadResponseCallbackInInterface() + "\n"
     res2 += util + "\n"
@@ -102,7 +102,7 @@ def generate(everything):
 
     java_regexImpl = implRegexBuilder(uriTree)
     java_regexImpl += """@Override
-        public Util.GlobalCode check_global_error() {
+        public Util.GlobalCode CheckGlobalCode() {
             if (com.inase.android.gocci.utils.Util.getConnectedState(Application_Gocci.getInstance().getApplicationContext()) == com.inase.android.gocci.utils.Util.NetworkStatus.OFF) {
                 return Util.GlobalCode.ERROR_NO_INTERNET_CONNECTION;
             }
@@ -198,6 +198,7 @@ def generateParameterRegexInInterface(path, parameters):
     tmp = ["String " + s.key for s in parameters]
     return "Util." + localCode + " " + path.title().replace('/', '') + "ParameterRegex(" + ", ".join(tmp) + ");"
 
+
 def generateResponseInInterface(path):
     methodName = path.title().replace('/', "") + "Response"
     return "void " + methodName + "(JSONObject jsonObject, PayloadResponseCallback cb);"
@@ -205,7 +206,7 @@ def generateResponseInInterface(path):
 
 def generatePayloadResponseCallbackInInterface():
     return """interface PayloadResponseCallback {
-        void onSuccess(JSONObject payload);
+        void onSuccess(JSONObject jsonObject);
 
         void onGlobalError(Util.GlobalCode globalCode);
 
@@ -240,14 +241,15 @@ def generateParameterRegexInImpl(path, parameters):
     for p in parameters:
         res += template.format(PARA=p.key, REGEX=p.regex, LOCALCODE=localCode, MALERROR=p.corrospondigMalformError.code)
         if not p.optional:
-            res += optional_template.format(LOCALCODE=localCode, MISERROR= p.corrospondigMissingError.code)
+            res += optional_template.format(LOCALCODE=localCode, MISERROR=p.corrospondigMissingError.code)
     return ident(res) + "return null;}"
 
 
 def generateResponseInImpl(path):
     methodName = path.title().replace('/', "") + "Response"
-    return "@Override\npublic void " + methodName + "(JSONObject jsonObject, PayloadResponseCallback cb) {\n"\
+    return "@Override\npublic void " + methodName + "(JSONObject jsonObject, PayloadResponseCallback cb) {\n" \
            + generateResponse(path) + "\n}"
+
 
 def generateResponse(path):
     localCode = path.title().replace('/', "") + "LocalCode"
@@ -260,7 +262,7 @@ def generateResponse(path):
                 Util.GlobalCode globalCode = Util.GlobalCodeReverseLookupTable(code);
                 if (globalCode != null) {{
                     if (globalCode == Util.GlobalCode.SUCCESS) {{
-                        cb.onSuccess(jsonObject.getJSONObject("payload"));
+                        cb.onSuccess(jsonObject);
                     }} else {{
                         cb.onGlobalError(globalCode);
                     }}
