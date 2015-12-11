@@ -235,18 +235,18 @@ URI /get/nearline
 PAR lat         "^\d+.\d+$"
 PAR lon         "^\d+.\d+$"
 ############################################################################################
-RES ARRAY nearlinedata
+RES ARRAY nearposts
     RES cheer_flag          "^0$|^1$"
     RES distance            INTEGER
     RES gochi_flag          "^0$|^1$"
-    #RES hls_movie           "???"
-    #RES movie               "???"
-    #RES mp4_movie           "???"
-    RES post_date           "???"
+    RES movie               "^[0-9_-]+$"
+    RES hls_movie           "^http\S+$"
+    RES mp4_movie           "^http\S$
+    RES post_date           "^\S{1,20}$"
     RES post_id             "^\d+$"
     RES rest_id             "^\d+$"
     RES restname            "^\S{2,30}$"
-    RES thumbnail           "???"
+    RES thumbnail           "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
     RES value               INTEGER
@@ -257,17 +257,17 @@ RES ARRAY END
 ############################################################################################
 URI /get/followline
 ############################################################################################
-RES ARRAY followlinedata
+RES ARRAY posts
     RES cheer_flag          "^0$|^1$"
     RES gochi_flag          "^0$|^1$"
-    #RES hls_movie           "???"
-    #RES movie               "???"
-    #RES mp4_movie           "???"
-    RES post_date           "???"
+    RES hls_movie           "^http\S+$"
+    RES movie               "^[0-9_-]+$"
+    RES mp4_movie           "^http\S$"
+    RES post_date           "^\S{1,20}$"
     RES post_id             "^\d+$"
     RES rest_id             "^\d+$"
     RES restname            "^\S{2,30}$"
-    RES thumbnail           "???"
+    RES thumbnail           "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
     RES value               INTEGER
@@ -278,17 +278,17 @@ RES ARRAY END
 ############################################################################################
 URI /get/timeline
 ############################################################################################
-RES ARRAY timelinedata
+RES ARRAY posts
     RES cheer_flag          "^0$|^1$"
     RES gochi_flag          "^0$|^1$"
-    #RES hls_movie           "???"
-    #RES movie               "???"
-    #RES mp4_movie           "???"
-    RES post_date           "???"
+    RES hls_movie           "^http\S+$"
+    RES movie               "^[0-9_-]+$"
+    RES mp4_movie           "^http\S$"
+    RES post_date           "^\S{1,20}$"
     RES post_id             "^\d+$"
     RES rest_id             "^\d+$"
     RES restname            "^\S{2,30}$"
-    RES thumbnail           "???"
+    RES thumbnail           "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
     RES value               INTEGER
@@ -301,7 +301,7 @@ URI /get/user
 #############################################################################################
 PAR user_id 		"^\d+$"
 ############################################################################################
-RES DICT userdata
+RES DICT user
     RES cheer_num           INTEGER
     RES follow_flag         "^0$|^1$"
     RES follow_num          INTEGER
@@ -311,23 +311,23 @@ RES DICT userdata
     RES username            "^[\S]{2,20}$"
     RES want_num            INTEGER
 RES DICT END
-RES ARRAY postdata
-    RES category            "???"
+RES ARRAY posts
+    RES category            "^\S[1,20]$"
     RES cheer_flag          "^0$|^1$"
     RES comment_num         INTEGER
     RES gochi_flag          "^0$|^1$"
     RES gochi_num           INTEGER
-    #RES hls_movie           "???"
+    RES hls_movie           "^http\S+$"
     RES lat                 FLOAT
     RES lon                 FLOAT
     RES memo                "^\S{1,140}$"
-    #RES movie               "???"
-    #RES mp4_movie           "???"
-    RES post_date           "???"
+    RES movie               "^[0-9_-]+$"
+    RES mp4_movie           "^http\S$"
+    RES post_date           "^\S{1,20}$"
     RES post_id             "^\d+$"
     RES rest_id             "^\d+$"
     RES restname            "^\S{2,30}$"
-    RES thumbnail           "???"
+    RES thumbnail           "^http\S+$"
     RES value               INTEGER
 RES ARRAY END
 #############################################################################################
@@ -338,32 +338,32 @@ URI /get/rest
 #############################################################################################
 PAR rest_id 		"^\d+$"
 ############################################################################################
-RES DICT restdata
-    RES homepage            "???"
+RES DICT rest
+    RES homepage            "^http\S+$"
     RES lat                 FLOAT
-    RES locality            "???"
+    RES locality            "^\S[1,100]$"
     RES lon                 FLOAT
-    RES rest_category       "???"
+    RES rest_category       "^$"
     RES rest_id             "^\d+$"
     RES restname            "^\S{2,30}$"
-    RES tell                "???"
+    RES tell                "^[0-9-]{9,20}$"
     RES want_flag           "^0$|^1$"
 RES DICT END
-RES ARRAY postdata
-    RES category            "???"
+RES ARRAY posts
+    RES category            "^\S[1,20]$"
     RES cheer_flag          "^0$|^1$"
     RES comment_num         INTEGER
     RES gochi_flag          "^0$|^1$"
     RES gochi_num           INTEGER
-    #RES hls_movie           "???"
+    RES hls_movie           "^http\S+$"
     RES memo                "^\S{1,140}$"
-    #RES movie               "???"
-    #RES mp4_movie           "???"
-    RES post_date           "???"
+    RES movie               "^[0-9_-]+$"
+    RES mp4_movie           "^http\S$"
+    RES post_date           "^\S{1,20}$"
     RES post_id             "^\d+$"
     RES post_rest_id        "^\d+$"
     RES profile_img         "^[0-9_-]+$"
-    RES thumbnail           "???"
+    RES thumbnail           "^http\S+$""
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
     RES value               INTEGER
@@ -376,16 +376,16 @@ URI /get/comment
 ##############################################################################################
 PAR post_id         "^\d+$"
 #############################################################################################
-RES DICT memodata
+RES DICT memo
     RES memo                "^\S{1,140}$"
-    RES post_date           "???"
+    RES post_date           "^\S{1,20}$"
     RES profile_img         "^[0-9_-]+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
 RES DICT END
-RES ARRAY commentdata
+RES ARRAY comments
     RES comment             "^\S{1,140}$"
-    RES comment_date        "???"
+    RES comment_date        "^\S{1,20}$"
     RES comment_id          "^\d+$"
     RES comment_user_id     "^\d+$"
     RES profile_img         "^[0-9_-]+$"
@@ -403,7 +403,7 @@ URI /get/follow
 ##############################################################################################
 PAR user_id         "^\d+$"
 #############################################################################################
-RES ARRAY followdata
+RES ARRAY users
     RES follow_flag         "^0$|^1$"
     RES profile_img         "^[0-9_-]+$"
     RES user_id             "^\d+$"
@@ -417,7 +417,7 @@ URI /get/follower
 ##############################################################################################
 PAR user_id         "^\d+$"
 #############################################################################################
-RES ARRAY followerdata
+RES ARRAY users
     RES follow_flag         "^0$|^1$"
     RES profile_img         "^[0-9_-]+$"
     RES user_id             "^\d+$"
@@ -431,8 +431,8 @@ URI /get/want
 ##############################################################################################
 PAR user_id         "^\d+$"
 #############################################################################################
-RES ARRAY wantdata
-    RES locality            "???"
+RES ARRAY rests
+    RES locality            "^\S[1,100]$"
     RES rest_id             "^\d+$"
     RES restname            "^\S{2,30}$"
 RES ARRAY END
@@ -444,8 +444,8 @@ URI /get/user_cheer
 ##############################################################################################
 PAR user_id         "^\d+$"
 #############################################################################################
-RES ARRAY usercheerdata
-    RES locality            "???"
+RES ARRAY rests
+    RES locality            "^\S[1,100]$"
     RES rest_id             "^\d+$"
     RES restname            "^\S{2,30}$"
 RES ARRAY END
@@ -457,8 +457,8 @@ URI /get/rest_cheer
 ##############################################################################################
 PAR rest_id         "^\d+$"
 #############################################################################################
-RES ARRAY restcheerdata
-    RES locality            "???"
+RES ARRAY rests
+    RES locality            "^\S[1,100]$"
     RES rest_id             "^\d+$"
     RES restname            "^\S{2,30}$"
 RES ARRAY END
@@ -468,9 +468,9 @@ RES ARRAY END
 #############################################################################################
 URI /get/notice
 ##############################################################################################
-RES ARRAY noticedata
-    RES notice              "???"
-    RES notice_date         "???"
+RES ARRAY notices
+    RES notice              "^gochi$|^follow$|^comment$|^announce$"
+    RES notice_date         "^\S{1,20}$
     RES notice_id           "^\d+$"
     RES notice_post_id      "^\d+$"
     RES profile_img         "^[0-9_-]+$"
@@ -486,7 +486,7 @@ URI /get/near
 PAR lat                     "^\d+.\d+$"
 PAR lon                     "^\d+.\d+$"
 ############################################################################################
-RES ARRAY neardata
+RES ARRAY rests
     RES rest_id             "^\d+$"
     RES restname            "^\S{2,30}$"
 RES ARRAY END
