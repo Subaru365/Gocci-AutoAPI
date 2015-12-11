@@ -257,7 +257,7 @@ RES ARRAY END
 ############################################################################################
 URI /get/followline
 ############################################################################################
-RES ARRAY nearlinedata
+RES ARRAY followlinedata
     RES cheer_flag          "^0$|^1$"
     RES gochi_flag          "^0$|^1$"
     #RES hls_movie           "???"
@@ -278,7 +278,7 @@ RES ARRAY END
 ############################################################################################
 URI /get/timeline
 ############################################################################################
-RES ARRAY nearlinedata
+RES ARRAY timelinedata
     RES cheer_flag          "^0$|^1$"
     RES gochi_flag          "^0$|^1$"
     #RES hls_movie           "???"

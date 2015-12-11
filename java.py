@@ -114,18 +114,13 @@ def generate(everything):
     return """package com.inase.android.gocci.datasource.api;
 
 import com.inase.android.gocci.Application_Gocci;
-import com.inase.android.gocci.domain.model.Payload;
-import com.inase.android.gocci.utils.SavedData;
-import com.inase.android.gocci.utils.map.HeatmapLog;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;\n\n""" + wrapInInterface(
-        "API3Test", res2)
+        "API3", res2)
 
 
 def staticFinalString(varname, value):
@@ -154,7 +149,7 @@ def wrapInClass(classname, code):
 
 
 def implClassWithImpl(code):
-    return """class Impl implements API3Test {
+    return """class Impl implements API3 {
         private static Impl sAPI3;
 
         public Impl() {
