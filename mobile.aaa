@@ -21,8 +21,8 @@ VER 3.7
 ############################################################################################
 # You can use this like a dictonary key->value style and use it in your python code
 ############################################################################################
-API "baseurl"	    "https://mobile.api.gocci.me/v3/"
-API "testurl"	    "http://test.mobile.api.gocci.me/v3/"
+API "liveurl"	    "https://mobile.api.gocci.me/v3"
+API "testurl"	    "http://test.mobile.api.gocci.me/v3"
 API "target_API"    "/v3/"
 
 API "api_frame_regex_version" 		"\d+\.\d+"
@@ -34,9 +34,9 @@ API "api_frame_regex_message" 		"\w+"
 ############################################################################################
 # Global errors are defined before the first URI definition.
 ############################################################################################
-ERR SUCCESS 				        "Successful API request"
-ERR ERROR_SESSION_EXPIRED 	        "Session cookie is not valid anymore"
-ERR ERROR_CLIENT_OUTDATED 	        "The client version is too old for this API. Client update necessary"
+ERR SUCCESS 				  "Successful API request"
+ERR ERROR_SESSION_EXPIRED 	  "Session cookie is not valid anymore"
+ERR ERROR_CLIENT_OUTDATED 	  "The client version is too old for this API. Client update necessary"
 
 
 ############################################################################################

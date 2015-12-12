@@ -26,7 +26,9 @@ def generate(everything):
 """.format(MCN=masterClassName, DATE=datetime.datetime.now())
 
     
-    swift_intro  = staticLetString("baseurl", stringify(everything.apidict.pairs["baseurl"]))
+    swift_intro = staticLetString("version", stringify(everything.version))
+
+    swift_intro += staticLetString("liveurl", stringify(everything.apidict.pairs["liveurl"]))
     swift_intro += staticLetString("testurl", stringify(everything.apidict.pairs["testurl"]))
 
     swift_allErrorsAsEnum = generateEnum("GlobalCode", [ e.code for e in everything.globalErrors ] )
