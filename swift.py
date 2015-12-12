@@ -49,7 +49,6 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
 
     uriTree = everything.transformURITokensFromFlatArrayToTreeStructureBasedOnTheirPath()
 
-
     def onURIToken(uri, nodeName):
         res  = "let apipath = " + stringify(uri.path) + "\n\n"
         res += generateParameterClass(uri.parameters) + "\n\n"
@@ -74,7 +73,7 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
         res += "func on(code: LocalCode, perform: (LocalCode, String)->()){\n    self.localErrorMapping[code] = perform\n}\n\n"
         res += generateHandyErrorOnLocal([ e.code for e in uri.onlyExclusiveErrors ]) + "\n\n"
         res += generateParameterValidationForOneURI(uri) + "\n\n"
-        res += generateValidatingJSONParser(uri.responses) + "\n\n"
+        res += generateNonValidatingJSONParser(uri.responses) + "\n\n"
 
         return res
 
@@ -102,7 +101,8 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
     res += swift_APIClassOtherStuff + "\n\n"
     res += swift_subClasses + "\n\n"
 
-    return header + wrapInClass(masterClassName, res)
+    # res =  generatePayloadType(everything.uriTokens[0].responses) + "\n"
+    return  header + wrapInClass(masterClassName, res)
 
 
 
@@ -233,43 +233,43 @@ func handleLocalError(code: LocalCode, _ mmsg: String? = nil) {{
         handler(code, msg)
     }}
 }}
-
-func validateSimpleResponse(json: [String: AnyObject], _ value: String, _ regex: String, _ misErr: LocalCode, _ malErr: LocalCode ) -> String? {{
-    if let value = (json as? [String: String])?[value] {{
-        if !value.matches(regex) {{
-            handleLocalError(malErr)
-            return nil
-        }}
-        else {{
-            return value
-        }}
-    }}
-    else {{
-        handleLocalError(misErr)
-        return nil
-    }}
-}}
-
-func validateSimpleArrayResponse(json: [String: AnyObject], _ value: String, _ regex: String, _ misErr: LocalCode, _ malErr: LocalCode ) -> [String]? {{
-    if let values = (json as? [String: [String!]])?[value] {{
-        var res: [String] = []
-        for value in values {{
-            if !value.matches(regex) {{
-                handleLocalError(malErr)
-                return nil
-            }}
-            else {{
-                res.append(value)
-            }}
-        }}
-        return res
-    }}
-    else {{
-        handleLocalError(misErr)
-        return nil
-    }}
-}}
 """.format(AP=absolutPath)
+
+#func validateSimpleResponse(json: [String: JSON], _ value: String, _ regex: String, _ misErr: LocalCode, _ malErr: LocalCode ) -> String? {{
+#    if let value = json[value]?.string {{
+#        if !value.matches(regex) {{
+#            handleLocalError(malErr)
+#            return nil
+#        }}
+#        else {{
+#            return value
+#        }}
+#    }}
+#    else {{
+#        handleLocalError(misErr)
+#        return nil
+#    }}
+#}}
+#
+#func validateSimpleArrayResponse(json: [String: JSON], _ value: String, _ regex: String, _ misErr: LocalCode, _ malErr: LocalCode ) -> [String]? {{
+#    if let values = (json as? [String: [String!]])?[value] {{
+#        var res: [String] = []
+#        for value in values {{
+#            if !value.matches(regex) {{
+#                handleLocalError(malErr)
+#                return nil
+#            }}
+#            else {{
+#                res.append(value)
+#            }}
+#        }}
+#        return res
+#    }}
+#    else {{
+#        handleLocalError(misErr)
+#        return nil
+#    }}
+#}}
 
 def performFunctionWithPayload():
     return """
@@ -297,13 +297,25 @@ func perform(and: ()->()) {
 }
 """
 
-        
+
+
+
+def typeToSwiftType(typ):
+    if typ == tokens.ResponseType.INTEGER:
+        return "Int!"
+    elif typ == tokens.ResponseType.FLOAT:
+        return "Double!"
+    elif typ == tokens.ResponseType.BOOLEAN:
+        return "Bool!"
+    elif typ == tokens.ResponseType.STRING:
+        return "String!"
+    die("Swift parser can't handle type: " + leaf.typ)
 
 def generatePayloadType(responses):
 
-    def onleaf(leaf, typ="String!"):
+    def onleaf(leaf):
         nonlocal payload
-        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=leaf.key, TYPE=typ)
+        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=leaf.key, TYPE=typeToSwiftType(leaf.typ))
 
     def onarray(array, typ="[String] = []"):
         nonlocal payload
@@ -338,87 +350,106 @@ def generatePayloadType(responses):
     return payload
 
 
-def generateValidatingJSONParser(responses):
+def swiftlyJSONtypeConversation(leaf):
+    if leaf.typ == tokens.ResponseType.INTEGER:
+        return "int"
+    elif leaf.typ == tokens.ResponseType.FLOAT:
+        return "double"
+    elif leaf.typ == tokens.ResponseType.BOOLEAN:
+        return "bool"
+    elif leaf.typ == tokens.ResponseType.STRING:
+        return "string"
+    else:
+        die("Swift parser can't handle type: " + leaf.typ)
+
+def generateNonValidatingJSONParser(responses):
 
     def onleaf(leaf):
+        typ = swiftlyJSONtypeConversation(leaf)
         nonlocal validator
-        if leaf.typ != tokens.ResponseType.STRING:
-            validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
-            return
-        validator += """{VARPATH}.{KEY} = validateSimpleResponse(json, "{KEY}", {RE},\n     .{MISERR}, .{MALERR})
-if {VARPATH}.{KEY} == nil {{ return nil }}\n
-""".format(VARPATH=".".join(varstack), KEY=leaf.key, RE=regexify(leaf.regex), MISERR=leaf.corrospondigMissingError.code, MALERR=leaf.corrospondigMalformError.code)
+        clause = """
+if let {KEY} = json["{KEY}"]?.{TYP} {{
+    payload.{KEY} = {KEY}
+}}
+else {{
+    handleLocalError(.{MERR})
+    return nil
+}}
+"""
+        validator += clause.format(KEY=leaf.key, TYP=swiftlyJSONtypeConversation(leaf), MERR=leaf.corrospondigMissingError.code) 
 
-    def onarray(array):
-        nonlocal validator
-        if leaf.typ != tokens.ResponseType.STRING:
-            validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
-            return
-        validator += """if let tmp = validateSimpleArrayResponse(json, "{KEY}", {RE},\n    .{MISERR}, .{MALERR}) {{
-    {VARPATH}.{KEY} == tmp\n}}\nelse {{ return nil }}\n
-""".format(VARPATH=".".join(varstack), KEY=array.key, RE=regexify(array.regex), MISERR=array.corrospondigMissingError.code, MALERR=array.corrospondigMalformError.code)
-
-    def oncompoundarray(compoundarray):
-        nonlocal validator
-        nonlocal varstack
-        typestack.append(cAmElCaSe(compoundarray.key))
-        pre = "if let arraydict = (json as? [String: [[String: {TYPEPATH}!]]])?[{KEY}] {{\n"
-        pre += ident("for json in arraydict {{\n    let tmp = {TYPEPATH}()\n\n")
-        validator += pre.format(TYPEPATH=".".join(typestack), KEY=stringify(compoundarray.key)) 
-        currentvarstack = varstack
-        varstack = ["tmp"]
-        stepDownMagic(compoundarray, True)
-        varstack = currentvarstack
-        post = ident("    {VARPATH}.{KEY}.append(tmp)\n").format(VARPATH=".".join(varstack), KEY=compoundarray.key)+ "    }\n"
-        validator += post +  "}\nelse {\n    handleLocalError(."+ compoundarray.corrospondigMissingError.code +")\n}\n\n"
-
-    def ondict(dictleaf):
-        nonlocal validator
-        typestack.append(cAmElCaSe(dictleaf.key))
-        varstack.append(dictleaf.key)
-        pre = "if let json = (json as? [String: [String: {TYPEPATH}!]])?[{KEY}] {{\n\n"
-        validator += pre.format(TYPEPATH=".".join(typestack), KEY=stringify(dictleaf.key)) 
-        stepDownMagic(dictleaf)
-        validator += "}\nelse {\n    handleLocalError(."+ dictleaf.corrospondigMissingError.code +")\n}\n\n"
-        varstack.pop()
-
-    def stepDownMagic(complextype, twice=False):
-        nonlocal validator
-        tmp = validator
-        validator = ""
-        complextype.traverse(onleaf, onarray, oncompoundarray, ondict)
-        validator = tmp + (ident(ident(validator)) if twice else ident(validator))
-        typestack.pop()
 
     def masterWrap(entry):
         nonlocal validator
-        pre = "func validateResponse(json: [String: AnyObject]) -> Payload? {\n    let payload = Payload()\n\n"
-        entry.traverse(onleaf, onarray, oncompoundarray, ondict)
+        pre = "func validateResponse(json: [String: JSON]) -> Payload? {\n    let payload = Payload()\n\n"
+        entry.traverse(onleaf)
         validator = pre + ident(validator) + "\n    return payload\n}\n"
     
-    typestack = ["Payload"]
-    varstack  = ["payload"]
     validator = "" 
     masterWrap(responses)
     return "" if not responses.leafs else validator
 
-l = """
+# def generateValidatingJSONParser(responses):
+
+    # def onleaf(leaf):
+        # nonlocal validator
+        # if leaf.typ != tokens.ResponseType.STRING:
+            # validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
+            # return
+        # validator += """{VARPATH}.{KEY} = validateSimpleResponse(json, "{KEY}", {RE},\n     .{MISERR}, .{MALERR})
+# if {VARPATH}.{KEY} == nil {{ return nil }}\n
+# """.format(VARPATH=".".join(varstack), KEY=leaf.key, RE=regexify(leaf.regex), MISERR=leaf.corrospondigMissingError.code, MALERR=leaf.corrospondigMalformError.code)
+
+    # def onarray(array):
+        # nonlocal validator
+        # if leaf.typ != tokens.ResponseType.STRING:
+            # validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
+            # return
+        # validator += """if let tmp = validateSimpleArrayResponse(json, "{KEY}", {RE},\n    .{MISERR}, .{MALERR}) {{
+    # {VARPATH}.{KEY} == tmp\n}}\nelse {{ return nil }}\n
+# """.format(VARPATH=".".join(varstack), KEY=array.key, RE=regexify(array.regex), MISERR=array.corrospondigMissingError.code, MALERR=array.corrospondigMalformError.code)
+
+    # def oncompoundarray(compoundarray):
+        # nonlocal validator
+        # nonlocal varstack
+        # typestack.append(cAmElCaSe(compoundarray.key))
+        # pre = "if let arraydict = (json as? [String: [[String: {TYPEPATH}!]]])?[{KEY}] {{\n"
+        # pre += ident("for json in arraydict {{\n    let tmp = {TYPEPATH}()\n\n")
+        # validator += pre.format(TYPEPATH=".".join(typestack), KEY=stringify(compoundarray.key)) 
+        # currentvarstack = varstack
+        # varstack = ["tmp"]
+        # stepDownMagic(compoundarray, True)
+        # varstack = currentvarstack
+        # post = ident("    {VARPATH}.{KEY}.append(tmp)\n").format(VARPATH=".".join(varstack), KEY=compoundarray.key)+ "    }\n"
+        # validator += post +  "}\nelse {\n    handleLocalError(."+ compoundarray.corrospondigMissingError.code +")\n}\n\n"
+
+    # def ondict(dictleaf):
+        # nonlocal validator
+        # typestack.append(cAmElCaSe(dictleaf.key))
+        # varstack.append(dictleaf.key)
+        # pre = "if let json = (json as? [String: [String: {TYPEPATH}!]])?[{KEY}] {{\n\n"
+        # validator += pre.format(TYPEPATH=".".join(typestack), KEY=stringify(dictleaf.key)) 
+        # stepDownMagic(dictleaf)
+        # validator += "}\nelse {\n    handleLocalError(."+ dictleaf.corrospondigMissingError.code +")\n}\n\n"
+        # varstack.pop()
+
+    # def stepDownMagic(complextype, twice=False):
+        # nonlocal validator
+        # tmp = validator
+        # validator = ""
+        # complextype.traverse(onleaf, onarray, oncompoundarray, ondict)
+        # validator = tmp + (ident(ident(validator)) if twice else ident(validator))
+        # typestack.pop()
+
+    # def masterWrap(entry):
+        # nonlocal validator
+        # pre = "func validateResponse(json: [String: JSON]) -> Payload? {\n    let payload = Payload()\n\n"
+        # entry.traverse(onleaf, onarray, oncompoundarray, ondict)
+        # validator = pre + ident(validator) + "\n    return payload\n}\n"
     
-    // JSON ARRAY OF DICT CASE
-    if let arraydict = (json as? [String: [[String: Payload.GeoPosition!]]])?["geo_position"] {
-        for dict in arraydict {
-            let dict_of_geopositions = Payload.GeoPosition()
-            
-            dict_of_geopositions.long = self.validateSimpleResponse(dict, "username", "regex", .ERR, .ERR)
-            if dict_of_geopositions.long != nil { return nil }
-            
-            dict_of_geopositions.long = self.validateSimpleResponse(dict, "username", "regex", .ERR, .ERR)
-            if dict_of_geopositions.long != nil { return nil }
-            
-            res.geo_positions.append(dict_of_geopositions)
-        }
-    }
-    else {
-        handleLocalError(.ERROR_RESPONSE_IDENTITY_ID_MISSING)
-    }
-"""
+    # typestack = ["Payload"]
+    # varstack  = ["payload"]
+    # validator = "" 
+    # masterWrap(responses)
+    # return "" if not responses.leafs else validator
+
