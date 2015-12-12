@@ -141,7 +141,7 @@ def generateParameterGetter(APIName, path, parameters):
 
 
 def wrapInInterface(classname, code):
-    return "interface {NAME} {{\n{CODE}}}".format(NAME=classname, CODE=ident(code))
+    return "public interface {NAME} {{\n{CODE}}}".format(NAME=classname, CODE=ident(code))
 
 
 def wrapInClass(classname, code):
@@ -201,7 +201,7 @@ def generateResponseInInterface(path):
 
 def generatePayloadResponseCallbackInInterface():
     return """interface PayloadResponseCallback {
-        void onSuccess(JSONObject jsonObject);
+        void onSuccess(JSONObject payload);
 
         void onGlobalError(Util.GlobalCode globalCode);
 
@@ -257,7 +257,8 @@ def generateResponse(path):
                 Util.GlobalCode globalCode = Util.GlobalCodeReverseLookupTable(code);
                 if (globalCode != null) {{
                     if (globalCode == Util.GlobalCode.SUCCESS) {{
-                        cb.onSuccess(jsonObject);
+                        JSONObject payload = jsonObject.getJSONObject("payload");
+                        cb.onSuccess(payload);
                     }} else {{
                         cb.onGlobalError(globalCode);
                     }}

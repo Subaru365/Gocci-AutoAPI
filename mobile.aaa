@@ -235,13 +235,13 @@ URI /get/nearline
 PAR lat         "^\d+.\d+$"
 PAR lon         "^\d+.\d+$"
 ############################################################################################
-RES ARRAY nearposts
+RES ARRAY posts
     RES cheer_flag          "^0$|^1$"
     RES distance            INTEGER
     RES gochi_flag          "^0$|^1$"
     RES movie               "^[0-9_-]+$"
     RES hls_movie           "^http\S+$"
-    RES mp4_movie           "^http\S$
+    RES mp4_movie           "^http\S$"
     RES post_date           "^\S{1,20}$"
     RES post_id             "^\d+$"
     RES rest_id             "^\d+$"
@@ -496,7 +496,7 @@ RES ARRAY END
 ############################################################################################
 URI /get/heatmap
 ############################################################################################
-RES ARRAY heatmapdata
+RES ARRAY rests
     RES post_rest_id        "^\d+$"
     RES restname            "^\S{2,30}$"
     RES lat                 "^\d+.\d+$"
