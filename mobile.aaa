@@ -21,7 +21,7 @@ VER 3.7
 ############################################################################################
 # You can use this like a dictonary key->value style and use it in your python code
 ############################################################################################
-API "baseurl"	    "https://api.mobile.gocci.me/v3/"
+API "baseurl"	    "https://mobile.api.gocci.me/v3/"
 API "testurl"	    "http://test.mobile.api.gocci.me/v3/"
 API "target_API"    "/v3/"
 
@@ -389,7 +389,7 @@ RES ARRAY comments
     RES comment_id          "^\d+$"
     RES comment_user_id     "^\d+$"
     RES profile_img         "^[0-9_-]+$"
-    RES ARRAY re_user_id
+    RES ARRAY users
         RES user_id         "^\d+$"
         RES username        "^[\S]{2,20}$"
     RES ARRAY END
