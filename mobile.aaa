@@ -21,8 +21,8 @@ VER 3.7
 ############################################################################################
 # You can use this like a dictonary key->value style and use it in your python code
 ############################################################################################
-API "baseurl"	    "https://api.mobile.gocci.me/v3"
-API "testurl"	    "http://test.mobile.api.gocci.me/v3"
+API "baseurl"	    "https://mobile.api.gocci.me/v3/"
+API "testurl"	    "http://test.mobile.api.gocci.me/v3/"
 API "target_API"    "/v3/"
 
 API "api_frame_regex_version" 		"\d+\.\d+"
@@ -298,7 +298,7 @@ RES DICT user
     RES follow_flag         "^0$|^1$"
     RES follow_num          INTEGER
     RES follower_num        INTEGER
-    RES profile_img         "^[0-9_-]+$"
+    RES profile_img         "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
     RES want_num            INTEGER
@@ -354,8 +354,8 @@ RES ARRAY posts
     RES post_date           "^\S{1,20}$"
     RES post_id             "^\d+$"
     RES post_rest_id        "^\d+$"
-    RES profile_img         "^[0-9_-]+$"
-    RES thumbnail           "^http\S+$""
+    RES profile_img         "^http\S+$"
+    RES thumbnail           "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
     RES value               INTEGER
@@ -371,7 +371,7 @@ PAR post_id         "^\d+$"
 RES DICT memo
     RES memo                "^\S{1,140}$"
     RES post_date           "^\S{1,20}$"
-    RES profile_img         "^[0-9_-]+$"
+    RES profile_img         "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
 RES DICT END
@@ -380,8 +380,8 @@ RES ARRAY comments
     RES comment_date        "^\S{1,20}$"
     RES comment_id          "^\d+$"
     RES comment_user_id     "^\d+$"
-    RES profile_img         "^[0-9_-]+$"
-    RES ARRAY re_user_id
+    RES profile_img         "^http\S+$"
+    RES ARRAY re_users
         RES user_id         "^\d+$"
         RES username        "^[\S]{2,20}$"
     RES ARRAY END
@@ -397,7 +397,7 @@ PAR user_id         "^\d+$"
 #############################################################################################
 RES ARRAY users
     RES follow_flag         "^0$|^1$"
-    RES profile_img         "^[0-9_-]+$"
+    RES profile_img         "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
 RES ARRAY END
@@ -411,7 +411,7 @@ PAR user_id         "^\d+$"
 #############################################################################################
 RES ARRAY users
     RES follow_flag         "^0$|^1$"
-    RES profile_img         "^[0-9_-]+$"
+    RES profile_img         "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
 RES ARRAY END
@@ -465,7 +465,7 @@ RES ARRAY notices
     RES notice_date         "^\S{1,20}$"
     RES notice_id           "^\d+$"
     RES notice_post_id      "^\d+$"
-    RES profile_img         "^[0-9_-]+$"
+    RES profile_img         "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
 RES ARRAY END
