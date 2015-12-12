@@ -1,7 +1,7 @@
 # AAA = Advanced API Abstraction
 
 # Version of the AAA file. Always increment this on chages relatet to SYNTAX, not if you add an URI or ERROR
-VER 3.6
+VER 3.7
 
 ############################################################################################
 # First a reminder of our wunderful API Baseframe:
@@ -470,7 +470,7 @@ URI /get/notice
 ##############################################################################################
 RES ARRAY notices
     RES notice              "^gochi$|^follow$|^comment$|^announce$"
-    RES notice_date         "^\S{1,20}$
+    RES notice_date         "^\S{1,20}$"
     RES notice_id           "^\d+$"
     RES notice_post_id      "^\d+$"
     RES profile_img         "^[0-9_-]+$"

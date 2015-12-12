@@ -52,4 +52,3 @@ def generate(everything):
 
 
     return json.dumps(res, indent=4, sort_keys=True)
-

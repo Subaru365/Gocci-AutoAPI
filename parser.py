@@ -28,7 +28,7 @@ def parseLineOrErrorOut(regex, line, emsg):
             die(emsg + " does not correspond to regex: '"+regex+"'\nFailed on Line: '" + line + "'")
 
 def parseParameterLine(line):
-    so = parseLineOrErrorOut(r'^PAR\s+(OPT\s+)?([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: PAR Parameter")
+    so = parseLineOrErrorOut(r'^PAR\s+(OPT\s+)?([a-z][a-z0-9_]*)\s+"(.+)"$', line, "PARSING ERROR: PAR Parameter")
     return ParameterToken(key = so.group(2), re = so.group(3), optional = so.group(1) != None)
 
 def parseErrorLine(line):
@@ -56,7 +56,7 @@ def parseResponseLine(firstline, lineiterator, level=1):
 
 def parseResponseSimple(line):
         # so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
-        so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z_]+)\s+(BOOLEAN|FLOAT|INTEGER|".+")$', line, "PARSING ERROR: RES Response")
+        so = parseLineOrErrorOut(r'^\w\w\w\s+([a-z][a-z0-9_]*)\s+(BOOLEAN|FLOAT|INTEGER|".+")$', line, "PARSING ERROR: RES Response")
         if so.group(2) == "INTEGER":
             return ResponseToken(so.group(1), None, typ=ResponseType.INTEGER)
         elif so.group(2) == "FLOAT":
@@ -67,11 +67,11 @@ def parseResponseSimple(line):
             return ResponseToken(so.group(1), so.group(2)[1:-1], typ=ResponseType.STRING)
 
 def parseResponseArray(line):
-    so = parseLineOrErrorOut(r'^RES\s+ARRAY\s+OF\s+([a-z_]+)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
+    so = parseLineOrErrorOut(r'^RES\s+ARRAY\s+OF\s+([a-z][a-z0-9_]*)\s+"(.+)"$', line, "PARSING ERROR: RES Response")
     return ResponseArrayToken(so.group(1), so.group(2))
 
 def parseResponseArrayCompound(firstline, iterator, level=1):
-    arrayname = parseLineOrErrorOut(r'^RES\s+ARRAY\s+([a-z_]+)$', firstline, "PARSING ERROR: RES ARRAY Response").group(1)
+    arrayname = parseLineOrErrorOut(r'^RES\s+ARRAY\s+([a-z][a-z0-9_]*)$', firstline, "PARSING ERROR: RES ARRAY Response").group(1)
     res = ResponseArrayCompoundToken(arrayname, level)
     for nextline in iterator:
         if nextline.startswith("RES ARRAY END"):
@@ -94,7 +94,7 @@ def parseResponseArrayPre(firstline, lineiter, level=1):
         return parseResponseArrayCompound(firstline, lineiter, level)
 
 def parseResponseDictonary(firstline, iterator, level=1):
-    dictname = parseLineOrErrorOut(r'^RES\s+DICT\s+([a-z_]+)$', firstline, "PARSING ERROR: RES DICT Response").group(1)
+    dictname = parseLineOrErrorOut(r'^RES\s+DICT\s+([a-z][a-z0-9_]*)$', firstline, "PARSING ERROR: RES DICT Response").group(1)
     res = ResponseDictonaryToken(dictname, level)
     for line in iterator:
         if line.startswith("RES DICT END"):
