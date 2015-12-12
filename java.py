@@ -217,6 +217,28 @@ def generateGetAPI(path, parameters):
     if len(tmp) > 0:
         line = " + ".join(["\"&" + p.key + "=\" + " + p.key for p in parameters])
         res += " + \"?" + line[2:]
+
+    if cAmElCaSe(methodName) == "GetTimeline":
+        res += """;\n}\npublic static String getGetTimelineAPI(int page, int category_id, int value_id) {
+            StringBuilder url = null;
+            url = new StringBuilder(testurl + "/get/timeline/?page=" + page);
+            if (category_id != 0) url.append("&category_id=").append(category_id);
+            if (value_id != 0) url.append("&value_id=").append(value_id);
+            return new String(url)"""
+    elif cAmElCaSe(methodName) == "GetFollowline":
+        res += """;\n}\npublic static String getGetFollowlineAPI(int page, int category_id, int value_id) {
+            StringBuilder url = null;
+            url = new StringBuilder(testurl + "/get/followline/?page=" + page);
+            if (category_id != 0) url.append("&category_id=").append(category_id);
+            if (value_id != 0) url.append("&value_id=").append(value_id);
+            return new String(url)"""
+    elif cAmElCaSe(methodName) == "GetNearline":
+        res += """;\n}\npublic static String getGetNearlineAPI(String lat, String lon, int page, int category_id, int value_id) {
+            StringBuilder url = null;
+            url = new StringBuilder(testurl + "/get/nearline/?lon=" + lon + "&lat=" + lat + "&page=" + page);
+            if (category_id != 0) url.append("&category_id=").append(category_id);
+            if (value_id != 0) url.append("&value_id=").append(value_id);
+            return new String(url)"""
     return res + ";\n}"
 
 
