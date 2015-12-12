@@ -7,7 +7,7 @@ def generate(everything):
         for para in uri.parameters:
             para.regex = regexify(para.regex)
 
-    java_intro = staticFinalString("baseurl", stringify(everything.apidict.pairs["baseurl"]))
+    java_intro = staticFinalString("liveurl", stringify(everything.apidict.pairs["liveurl"]))
     java_intro += staticFinalString("testurl", stringify(everything.apidict.pairs["testurl"]))
 
     globalCode = "GlobalCode"
@@ -79,8 +79,7 @@ def generate(everything):
 
     util = wrapInClass("Util", res)
 
-    res2 = "Util.GlobalCode CheckGlobalCode();\n"
-    res2 += java_regexInterface + "\n"
+    res2 = java_regexInterface + "\n"
     res2 += generatePayloadResponseCallbackInInterface() + "\n"
     res2 += util + "\n"
 
@@ -101,19 +100,10 @@ def generate(everything):
         return classet
 
     java_regexImpl = implRegexBuilder(uriTree)
-    java_regexImpl += """@Override
-        public Util.GlobalCode CheckGlobalCode() {
-            if (com.inase.android.gocci.utils.Util.getConnectedState(Application_Gocci.getInstance().getApplicationContext()) == com.inase.android.gocci.utils.Util.NetworkStatus.OFF) {
-                return Util.GlobalCode.ERROR_NO_INTERNET_CONNECTION;
-            }
-            return Util.GlobalCode.SUCCESS;
-        }"""
 
     res2 += implClassWithImpl(java_regexImpl)
 
     return """package com.inase.android.gocci.datasource.api;
-
-import com.inase.android.gocci.Application_Gocci;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -286,18 +276,14 @@ def generateResponse(path):
                     }}
                 }} else {{
                     Util.{LOCALCODE} localCode = Util.{LOCALCODE}ReverseLookupTable(code);
-                    if (localCode != null) {{
-                        String errorMessage = Util.{LOCALCODE}MessageTable(localCode);
-                        if (message.equals(errorMessage)) {{
-                            cb.onLocalError(message);
-                        }} else {{
-                            cb.onGlobalError(Util.GlobalCode.ERROR_SERVER_SIDE_FAILURE);
-                        }}
+                    String errorMessage = Util.{LOCALCODE}MessageTable(localCode);
+                    if (message.equals(errorMessage)) {{
+                        cb.onLocalError(errorMessage);
                     }} else {{
-                        cb.onGlobalError(Util.GlobalCode.ERROR_UNKNOWN_ERROR);
+                        cb.onLocalError(message);
                     }}
                 }}
             }} catch (JSONException e) {{
-                cb.onGlobalError(Util.GlobalCode.ERROR_BASEFRAME_JSON_MALFORMED);
+                e.printStackTrace();
             }}"""
     return template.format(LOCALCODE=localCode)
