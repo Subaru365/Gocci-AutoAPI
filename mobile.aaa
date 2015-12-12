@@ -363,7 +363,7 @@ RES ARRAY posts
     RES post_id             "^\d+$"
     RES post_rest_id        "^\d+$"
     RES profile_img         "^[0-9_-]+$"
-    RES thumbnail           "^http\S+$""
+    RES thumbnail           "^http\S+$"
     RES user_id             "^\d+$"
     RES username            "^[\S]{2,20}$"
     RES value               INTEGER
