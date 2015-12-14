@@ -7,7 +7,7 @@ def generate(everything):
         for para in uri.parameters:
             para.regex = regexify(para.regex)
 
-    java_intro = staticFinalString("baseurl", stringify(everything.apidict.pairs["baseurl"]))
+    java_intro = staticFinalString("liveurl", stringify(everything.apidict.pairs["liveurl"]))
     java_intro += staticFinalString("testurl", stringify(everything.apidict.pairs["testurl"]))
 
     globalCode = "GlobalCode"
@@ -79,8 +79,7 @@ def generate(everything):
 
     util = wrapInClass("Util", res)
 
-    res2 = "Util.GlobalCode CheckGlobalCode();\n"
-    res2 += java_regexInterface + "\n"
+    res2 = java_regexInterface + "\n"
     res2 += generatePayloadResponseCallbackInInterface() + "\n"
     res2 += util + "\n"
 
@@ -101,19 +100,10 @@ def generate(everything):
         return classet
 
     java_regexImpl = implRegexBuilder(uriTree)
-    java_regexImpl += """@Override
-        public Util.GlobalCode CheckGlobalCode() {
-            if (com.inase.android.gocci.utils.Util.getConnectedState(Application_Gocci.getInstance().getApplicationContext()) == com.inase.android.gocci.utils.Util.NetworkStatus.OFF) {
-                return Util.GlobalCode.ERROR_NO_INTERNET_CONNECTION;
-            }
-            return Util.GlobalCode.SUCCESS;
-        }"""
 
     res2 += implClassWithImpl(java_regexImpl)
 
     return """package com.inase.android.gocci.datasource.api;
-
-import com.inase.android.gocci.Application_Gocci;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -217,6 +207,28 @@ def generateGetAPI(path, parameters):
     if len(tmp) > 0:
         line = " + ".join(["\"&" + p.key + "=\" + " + p.key for p in parameters])
         res += " + \"?" + line[2:]
+
+    if cAmElCaSe(methodName) == "GetTimeline":
+        res += """;\n}\npublic static String getGetTimelineAPI(int page, int category_id, int value_id) {
+            StringBuilder url = null;
+            url = new StringBuilder(testurl + "/get/timeline/?page=" + page);
+            if (category_id != 0) url.append("&category_id=").append(category_id);
+            if (value_id != 0) url.append("&value_id=").append(value_id);
+            return new String(url)"""
+    elif cAmElCaSe(methodName) == "GetFollowline":
+        res += """;\n}\npublic static String getGetFollowlineAPI(int page, int category_id, int value_id) {
+            StringBuilder url = null;
+            url = new StringBuilder(testurl + "/get/followline/?page=" + page);
+            if (category_id != 0) url.append("&category_id=").append(category_id);
+            if (value_id != 0) url.append("&value_id=").append(value_id);
+            return new String(url)"""
+    elif cAmElCaSe(methodName) == "GetNearline":
+        res += """;\n}\npublic static String getGetNearlineAPI(String lat, String lon, int page, int category_id, int value_id) {
+            StringBuilder url = null;
+            url = new StringBuilder(testurl + "/get/nearline/?lon=" + lon + "&lat=" + lat + "&page=" + page);
+            if (category_id != 0) url.append("&category_id=").append(category_id);
+            if (value_id != 0) url.append("&value_id=").append(value_id);
+            return new String(url)"""
     return res + ";\n}"
 
 
@@ -264,18 +276,14 @@ def generateResponse(path):
                     }}
                 }} else {{
                     Util.{LOCALCODE} localCode = Util.{LOCALCODE}ReverseLookupTable(code);
-                    if (localCode != null) {{
-                        String errorMessage = Util.{LOCALCODE}MessageTable(localCode);
-                        if (message.equals(errorMessage)) {{
-                            cb.onLocalError(message);
-                        }} else {{
-                            cb.onGlobalError(Util.GlobalCode.ERROR_SERVER_SIDE_FAILURE);
-                        }}
+                    String errorMessage = Util.{LOCALCODE}MessageTable(localCode);
+                    if (message.equals(errorMessage)) {{
+                        cb.onLocalError(errorMessage);
                     }} else {{
-                        cb.onGlobalError(Util.GlobalCode.ERROR_UNKNOWN_ERROR);
+                        cb.onLocalError(message);
                     }}
                 }}
             }} catch (JSONException e) {{
-                cb.onGlobalError(Util.GlobalCode.ERROR_BASEFRAME_JSON_MALFORMED);
+                e.printStackTrace();
             }}"""
     return template.format(LOCALCODE=localCode)

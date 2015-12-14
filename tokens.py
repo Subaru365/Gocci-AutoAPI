@@ -163,7 +163,7 @@ class ResponseToken(AbstractResponse):
         self.typ = typ
 
     def __str__(self):
-        return "RESPONSE: " + self.key + " " + self.regex
+        return "RESPONSE: " + self.key + " (" + self.typ + ")"
 
 
 class ResponseArrayToken(AbstractResponse):
@@ -174,7 +174,7 @@ class ResponseArrayToken(AbstractResponse):
         self.itemcount = itemcount
 
     def __str__(self):
-        return "RESPONSE: ARRAY OF [" + self.key + "] " + self.regex
+        return "RESPONSE: ARRAY OF [" + self.key + " (" + self.typ + ")] " 
 
 class ResponseDictonaryToken(AbstractResponse):
     def __init__(self, key, level):
