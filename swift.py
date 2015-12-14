@@ -39,24 +39,18 @@ def generate(everything):
     tmp = { e.code: e.code for e in everything.globalErrors }
     swift_codeReverseLookUpTable = generateCodeReverseLookUpTable("globalErrorReverseLookupTable", tmp)
 
-    swift_APIClassOtherStuff = """
-static var globalErrorMapping: [GlobalCode: (GlobalCode, String)->()] = [:]
-static var onUnhandledError: (GlobalCode, String)->() = { print("FATAL: UNHANDLED API ERROR: \($0): \($1)") }
-
-class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
-    globalErrorMapping[gcode] = perform
-}"""
-
-    swift_handyGlobalErrorOns = generateHandyErrorOnGlobal([ e.code for e in everything.globalErrors ])
 
     uriTree = everything.transformURITokensFromFlatArrayToTreeStructureBasedOnTheirPath()
 
     def onURIToken(uri, nodeName):
-        res  = "let apipath = " + stringify(uri.path) + "\n\n"
+        # res  = "var apipath: String { get { return " + stringify(uri.path) + " } }\n\n"
+        res  = "var apipath = " + stringify(uri.path) + "\n\n"
         res += generateParameterClass(uri.parameters) + "\n\n"
         res += "var localErrorMapping: [LocalCode: (LocalCode, String)->()] = [:]\n\n"
         res += "var onUnhandledError: (LocalCode, String)->() = { print(\"FATAL: UNHANDLED API ERROR: \($0): \($1)\") }\n\n"
         res += generateEnum("LocalCode", [ e.code for e in uri.errors ] ) + "\n\n"
+
+        res += "func canHandleErrorCode(code: String) -> Bool {\n    return " + nodeName + ".localErrorReverseLookupTable[code] != nil\n}\n\n"
 
         res += generatePayloadType(uri.responses) + "\n"
 
@@ -65,12 +59,12 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
         tmp = [ e.code for e in uri.errors ]
         res += generateSubCodeReverseLookUpTable("localErrorReverseLookupTable", tmp) + "\n\n"
 
-        res += otherStuffThatIsNeededButStatic(uri.absolutePath()) +"\n\n"
+        res += otherStuffThatIsNeededButStatic(nodeName) +"\n\n"
 
         if uri.responses.leafs:
-            res += performFunctionWithPayload()
+            res += performFunctionWithPayload(nodeName)
         else:
-            res += performFunctionWithOUTPayload()
+            res += performFunctionWithOUTPayload(nodeName)
 
         res += "func on(code: LocalCode, perform: (LocalCode, String)->()){\n    self.localErrorMapping[code] = perform\n}\n\n"
         res += generateHandyErrorOnLocal([ e.code for e in uri.onlyExclusiveErrors ]) + "\n\n"
@@ -86,7 +80,7 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
                 code = ident(subClassBuilder(v))
                 classet += "class {CN} {{\n\n{CODE} }}\n\n".format(CN=node, CODE=code)
             elif type(v) is tokens.URIToken:
-                classet += wrapInClass(node, onURIToken(v, node), "APIRequestProtocol") + "\n"
+                classet += wrapInClass(node, onURIToken(v, node), "APIRequest", "APIRequestProtocol") + "\n"
         return classet
 
     swift_subClasses = subClassBuilder(uriTree)
@@ -99,8 +93,6 @@ class func on(gcode: GlobalCode, perform:(GlobalCode, String)->()) {
     res += swift_allErrorsAsEnum + "\n\n"
     res += swift_codeReverseLookUpTable + "\n\n"
     res += swift_allErrorMessages + "\n\n"
-    res += swift_handyGlobalErrorOns + "\n\n"
-    res += swift_APIClassOtherStuff + "\n\n"
     res += swift_subClasses + "\n\n"
 
     # res =  generatePayloadType(everything.uriTokens[0].responses) + "\n"
@@ -156,12 +148,6 @@ def generateParameterClass(parameters):
     return wrapInClass("InternalParameterClass", res) + "\nlet parameters = InternalParameterClass()\n"
 
 
-def generateHandyErrorOnGlobal(ecodes):
-    template = """
-class func on_{ec}(perform:(GlobalCode, String)->()) {{
-    globalErrorMapping[.{ec}] = perform\n}}"""
-    return "".join( [ template.format(ec=ec) for ec in ecodes ] )
-
 def generateHandyErrorOnLocal(ecodes):
     template = """
 func on_{ec}(perform:(LocalCode, String)->()) {{
@@ -214,28 +200,14 @@ else {{
 """.format(MAPNAME=tablename, PARAMETER=parameter, REGEX=regexify(regex), PARAMETERUPCASE=parameter.upper())
 
 
-def otherStuffThatIsNeededButStatic(absolutPath):
+def otherStuffThatIsNeededButStatic(classname):
     return """
-func preHandleLocalError(code: String, _ mmsg: String? = nil) -> Bool {{
-    guard code == "SUCCESS" else {{
-        guard let rcode = {AP}.localErrorReverseLookupTable[code] else {{
-            APISupport.handleCommunicationFailure(.ERROR_UNKNOWN_ERROR, emsg: mmsg)
-            return false
-        }}
-        handleLocalError(rcode, mmsg)
-        return false
-    }}
-    return true
-}}
-
 func handleLocalError(code: LocalCode, _ mmsg: String? = nil) {{
-    let msg = mmsg ?? {AP}.localErrorMessageTable[code] ?? "No error message defined"
+    let msg = mmsg ?? {CN}.localErrorMessageTable[code] ?? "No error message defined"
     let handler = self.localErrorMapping[code] ?? self.onUnhandledError
-    dispatch_async(dispatch_get_main_queue()) {{
-        handler(code, msg)
-    }}
+    Util.runOnMainThread {{ handler(code, msg) }}
 }}
-""".format(AP=absolutPath)
+""".format(CN=classname)
 
 #func validateSimpleResponse(json: [String: JSON], _ value: String, _ regex: String, _ misErr: LocalCode, _ malErr: LocalCode ) -> String? {{
 #    if let value = json[value]?.string {{
@@ -273,34 +245,55 @@ func handleLocalError(code: LocalCode, _ mmsg: String? = nil) {{
 #    }}
 #}}
 
-def performFunctionWithPayload():
+def performFunctionWithPayload(classname):
     return """
-func perform(and: (payload: Payload)->()) {
-    APISupport.performNetworkRequest(self) { (code, msg, rawJSON) in
-        if self.preHandleLocalError(code, msg) {
-            if let payload = self.validateResponse(rawJSON) {
-                dispatch_async(dispatch_get_main_queue()) {
-                    and(payload: payload)
-                }
-            }
-        }
-    }
-}
-"""
+private var callBackLink: ((payload: Payload)->())? = nil
+                        
+func retry() {{
+    if let cb = callBackLink {{
+        perform(cb)
+    }}
+}}
 
-def performFunctionWithOUTPayload():
+func perform(and: (payload: Payload)->()) {{
+    callBackLink = and
+    APISupport.performNetworkRequest(self) {{ (code, msg, json) in
+        if code == "SUCCESS" {{
+            if let payload = self.validateResponse(json) {{
+                Util.runOnMainThread {{ and(payload: payload) }}
+            }}
+        }}
+        else {{
+            // guranteed by previous call to canHandleErrorCode
+            self.handleLocalError({CN}.localErrorReverseLookupTable[code]!)
+        }}
+    }}
+}}
+""".format(CN=classname)
+
+def performFunctionWithOUTPayload(classname):
     return """
-func perform(and: ()->()) {
-    APISupport.performNetworkRequest(self) { (code, msg, _) in
-        if self.preHandleLocalError(code, msg) {
-            and()
-        }
-    }
-}
-"""
+private var callBackLink: (()->())? = nil
+                        
+func retry() {{
+    if let cb = callBackLink {{
+        perform(cb)
+    }}
+}}
 
-
-
+func perform(and: ()->()) {{
+    callBackLink = and
+    APISupport.performNetworkRequest(self) {{ (code, msg, _) in
+        if code == "SUCCESS" {{
+            Util.runOnMainThread {{ and() }}
+        }}
+        else {{
+            // guranteed by previous call to canHandleErrorCode
+            self.handleLocalError({CN}.localErrorReverseLookupTable[code]!)
+        }}
+    }}
+}}
+""".format(CN=classname)
 
 def typeToSwiftType(typ):
     if typ == tokens.ResponseType.INTEGER:
@@ -455,3 +448,9 @@ else {{
     # masterWrap(responses)
     # return "" if not responses.leafs else validator
 
+ 
+            
+            
+        
+            
+ 
