@@ -48,6 +48,7 @@ RES user_id 		"^[0-9]+$"
 RES username 		"^\S{2,20}$"
 RES profile_img 	"^http\S+$"
 RES badge_num 		"^[0-9]+$"
+RES identity_id     "^us-east-1:[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$"
 RES cognito_token 	"^[a-zA-Z0-9_.-]{400,2200}$"
 ############################################################################################
 ERR ERROR_IDENTITY_ID_NOT_REGISTERD "The provided identity_id is not bound to any account"
