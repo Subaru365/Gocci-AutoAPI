@@ -9,6 +9,7 @@ def generate(everything):
 
     java_intro = staticFinalString("liveurl", stringify(everything.apidict.pairs["liveurl"]))
     java_intro += staticFinalString("testurl", stringify(everything.apidict.pairs["testurl"]))
+    java_intro += staticFinalString("version", stringify(everything.version))
 
     globalCode = "GlobalCode"
 
@@ -114,7 +115,7 @@ import java.util.concurrent.ConcurrentHashMap;\n\n""" + wrapInInterface(
 
 
 def staticFinalString(varname, value):
-    return "private static final String {vn} = {v};\n".format(vn=varname, v=value)
+    return "public static final String {vn} = {v};\n".format(vn=varname, v=value)
 
 
 def staticFinalHashMap(localcode):
