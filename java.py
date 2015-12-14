@@ -157,6 +157,8 @@ def generateEnum(enumname, items):
     res = "public enum " + enumname + " {"
     for i in items:
         res += "\n  " + i + ","
+    if enumname == "GlobalCode":
+        res += "\n " + "ERROR_UNKNOWN_ERROR,"
     return res + "\n}"
 
 
@@ -164,6 +166,8 @@ def generateErrorMsgTable(localCode, errorMsgDict):
     res = "public static String " + localCode + "MessageTable(" + localCode + " code) {\n\tif(" + localCode + "Map.isEmpty()) {"
     for k, v in errorMsgDict.items():
         res += "\n\t\t" + localCode + "Map.put(" + localCode + "." + k + ", " + v + ");"
+    if localCode == "GlobalCode":
+        res += "\n\t\t" + localCode + "Map.put(" + localCode + ".ERROR_UNKNOWN_ERROR, " + stringify("Unknown global error") + ");"
     res += "\n\t}\n\t\tString message = null;\n\t\tfor(Map.Entry<" + localCode + ", String> entry : " + localCode + "Map.entrySet()) {\n\t\t\t" \
                                                                                                                     "if(entry.getKey().equals(code)) {\n\t\t\t\tmessage = entry.getValue();\n\t\t\t\tbreak;\n}\n}\nreturn message;\n}"
     return res
@@ -173,6 +177,8 @@ def generateCodeReverseLookUpTable(localCode, codes):
     res = "public static " + localCode + " " + localCode + "ReverseLookupTable(String message) {\n\tif(" + localCode + "ReverseMap.isEmpty()) {"
     for c in codes:
         res += "\n\t\t" + localCode + "ReverseMap.put(" + stringify(c) + ", " + localCode + "." + c + ");"
+    if localCode == "GlobalCode":
+        res += "\n\t\t" + localCode + "ReverseMap.put(" + stringify("ERROR_UNKNOWN_ERROR") + ", GlobalCode.ERROR_UNKNOWN_ERROR);"
     res += "\n\t}\n\t\t" + localCode + " code = null;\n\t\tfor(Map.Entry<String, " + localCode + "> entry : " + localCode + "ReverseMap.entrySet()) {\n\t\t\t" \
                                                                                                                             "if(entry.getKey().equals(message)) {\n\t\t\t\tcode = entry.getValue();\n\t\t\t\tbreak;\n}\n}\nreturn code;\n}"
     return res
@@ -276,14 +282,18 @@ def generateResponse(path):
                     }}
                 }} else {{
                     Util.{LOCALCODE} localCode = Util.{LOCALCODE}ReverseLookupTable(code);
-                    String errorMessage = Util.{LOCALCODE}MessageTable(localCode);
-                    if (message.equals(errorMessage)) {{
-                        cb.onLocalError(errorMessage);
+                    if(localCode != null) {{
+                        String errorMessage = Util.{LOCALCODE}MessageTable(localCode);
+                        if (message.equals(errorMessage)) {{
+                            cb.onLocalError(errorMessage);
+                        }} else {{
+                            cb.onLocalError(message);
+                        }}
                     }} else {{
-                        cb.onLocalError(message);
+                        cb.onGlobalError(Util.GlobalCode.ERROR_UNKNOWN_ERROR);
                     }}
                 }}
             }} catch (JSONException e) {{
-                e.printStackTrace();
+                cb.onGlobalError(Util.GlobalCode.ERROR_UNKNOWN_ERROR);
             }}"""
     return template.format(LOCALCODE=localCode)
