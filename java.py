@@ -285,11 +285,7 @@ def generateResponse(path):
                     Util.{LOCALCODE} localCode = Util.{LOCALCODE}ReverseLookupTable(code);
                     if(localCode != null) {{
                         String errorMessage = Util.{LOCALCODE}MessageTable(localCode);
-                        if (message.equals(errorMessage)) {{
-                            cb.onLocalError(errorMessage);
-                        }} else {{
-                            cb.onLocalError(message);
-                        }}
+                        cb.onLocalError(errorMessage);
                     }} else {{
                         cb.onGlobalError(Util.GlobalCode.ERROR_UNKNOWN_ERROR);
                     }}
