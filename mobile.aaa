@@ -132,7 +132,6 @@ PAR post_id 		"^\d{1,12}$"
 URI /set/comment
 ############################################################################################
 PAR post_id 		"^\d{1,12}$"
-PAR comment 		"^\S{1,140}$"
 PAR comment 		"^(\n|[^\p{Cntrl}]){1,140}$"
 PAR re_user_id 		"^\d{1,12}$"
 ############################################################################################
@@ -377,7 +376,7 @@ RES DICT memo
     RES username 	    	"^[^\p{Cntrl}]{1,20}$"
 RES DICT END
 RES ARRAY comments
-    RES comment             "^\S{1,140}$"
+    RES comment 		    "^(\n|[^\p{Cntrl}]){1,140}$"
     RES comment_date        "^\S{1,20}$"
     RES comment_id          "^\d{1,12}$"
     RES comment_user_id     "^\d{1,12}$"
