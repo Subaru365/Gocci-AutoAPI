@@ -47,7 +47,7 @@ def generate(everything):
         res  = "var apipath = " + stringify(uri.path) + "\n\n"
         res += generateParameterClass(uri.parameters) + "\n\n"
         res += "var localErrorMapping: [LocalCode: (LocalCode, String)->()] = [:]\n\n"
-        res += "var onUnhandledError: (LocalCode, String)->() = { print(\"FATAL: UNHANDLED API ERROR: \($0): \($1)\") }\n\n"
+        # res += "var onUnhandledError: (LocalCode, String)->() = { print(\"FATAL: UNHANDLED API ERROR: \($0): \($1)\") }\n\n"
         res += generateEnum("LocalCode", [ e.code for e in uri.errors ] ) + "\n\n"
 
         res += "func canHandleErrorCode(code: String) -> Bool {\n    return " + nodeName + ".localErrorReverseLookupTable[code] != nil\n}\n\n"
@@ -204,8 +204,10 @@ def otherStuffThatIsNeededButStatic(classname):
     return """
 func handleLocalError(code: LocalCode, _ mmsg: String? = nil) {{
     let msg = mmsg ?? {CN}.localErrorMessageTable[code] ?? "No error message defined"
-    let handler = self.localErrorMapping[code] ?? self.onUnhandledError
-    Util.runOnMainThread {{ handler(code, msg) }}
+    APISupport.sep("LOCAL ERROR OCCURED")
+    APISupport.log("\(code): \(msg)")
+    Util.runOnMainThread {{ self.localErrorMapping[code]?(code, msg) }}
+    Util.runOnMainThread {{ self.privateOnAllErrorsCallback?() }}
 }}
 """.format(CN=classname)
 
