@@ -4,24 +4,93 @@ from util import *
 
 def generate(everything):
 
-    test = ""
-    res = "<?php\n\n"
+    res = """
+<?php
+/**
+ * Parameter list of uri.
+ *
+ * @package    Gocci-Mobile
+ * @version    3.0.0 (2015/12/09)
+ * @author     Subaru365 (a-murata@inase-inc.jp)
+ * @copyright  (C) 2015 Akira Murata
+ * @link       https://bitbucket.org/inase/gocci-mobile-api
+ */
+
+class Model_V3_Param extends Model
+{{
+    use SingletonTrait;
+
+    private $uri_path;
+
+    private $req_params = array();
+
+    private $status = array(
+        'version'   => {VER},
+        'uri'       => Uri::string(),
+        'code'      => '',
+        'message'   => '',
+        'payload'   => json_decode('{{}}'),
+    );
+
+
+    public function __get($name)
+    {
+        if ($name === 'getRequest') {
+            if (empty($this->status['code'])) {
+                return $this->req_params;
+            } else {
+                error_log($this->status['code']);
+                return false;
+            }
+        }
+    }
+
+
+    public function getRequest($input_params)
+    {{
+        $uri  = substr(Uri::string(), 4);
+        $this->uri_path     = str_replace("/", "_", $uri);
+        $req_function_name  = "setReqParams{{$this->uri_path}}";
+
+        $this->$req_function_name($input_params);
+
+        return $this->req_params;
+    }}
+
+
+    public function setResponse($params)
+    {{
+        $res_function_name = "setPayload{{$this->uri_path}}";
+
+        try {{
+            $this->$res_function_name($params);
+            $this->set_GlobalCode_SUCCESS();
+
+        }} catch (Excepsion $e){{
+            error_log($e);
+            $this->set_GlobalCode_ERROR_SERVER_SIDE_FAILURE();
+        }}
+    }}
+
+
+""".format(VER=everything.version)
 
     uripaths = [(uri.path, uri.normalizedKey()) for uri in everything.uriTokens]
-    # res += generateCodeFunction("GlobalCode", [(e.code, e.msg) for e in everything.globalErrors])
+    res += generateCodeFunction("GlobalCode", [(e.code, e.msg) for e in everything.globalErrors])
 
 
     for uri in everything.uriTokens:
 
         exclusiveErrors = [ (e.code, e.msg) for e in uri.onlyExclusiveErrors ]
 
-        # res += generateSetRequestParameter(uri.normalizedKey(), uri.parameters)
-        res += generateSetResponseParameter(uri.normalizedKey(), uri.responses)
+        res += generateSetRequestParameter(uri.normalizedKey(), uri.parameters)
+        # res += generateSetResponseParameter(uri.normalizedKey(), uri.responses)
 
-        # res += generateCodeFunction(uri.normalizedKey(), exclusiveErrors)
+        res += generateCodeFunction(uri.normalizedKey(), exclusiveErrors)
 
+    res += "}\n"
 
-    return res
+    return ident(res)
 
 
 def generateCodeFunction(switchname, codes):
@@ -72,20 +141,13 @@ def generateSetResponseParameter(uriname, responses):
 
     def oncompoundarray(compoundarray):
         nonlocal payload
-        tmp = payload
-        ref = {}
-        payload[compoundarray.key] = [ref]
-        payload = ref
+        payload += "{KEY}\n".format(KEY=compoundarray.key)
         compoundarray.traverse(onleaf, onarray, oncompoundarray, ondict)
-        payload = tmp
 
     def ondict(dictleaf):
         nonlocal payload
-        tmp = payload
-        payload[dictleaf.key] = {}
-        payload = payload[dictleaf.key]
+        payload += "{KEY}\n".format(KEY=dictleaf)
         dictleaf.traverse(onleaf, onarray, oncompoundarray, ondict)
-        payload = tmp
 
     def visitor(root):
         nonlocal payload
@@ -113,49 +175,3 @@ def wrapInPublicVoidFunction(fname, code):
 
 def wrapInPivateFunction(fname, code, arg=''):
     return "private function {NAME}({ARG})\n{{\n{CODE}}}\n\n\n".format(NAME=fname, CODE=ident(code), ARG=arg)
-
-
-def originCode():
-    return """
-
-    use SingletonTrait;
-
-    private $uri_path;
-
-    private $req_params = array();
-
-    private $status = array(
-        'version'   => {VER},
-        'uri'       => Uri::string(),
-        'code'      => '',
-        'message'   => '',
-        'payload'   => json_decode('{}'),
-    );
-
-
-    public function getRequest($input_params)
-    {        
-        $uri  = substr(Uri::string(), 4);
-        $this->uri_path     = str_replace("/", "_", $uri);
-        $req_function_name  = "setReqParams{$this->uri_path}";
-
-        $this->$req_function_name($input_params);
-
-        return $this->req_params;
-    }
-
-
-    public function setResponse($params)
-    {
-        $res_function_name = "setPayload{$this->uri_path}";
-        
-        try {
-            $this->$res_function_name($params);
-            $this->set_GlobalCode_SUCCESS();
-        
-        } catch (Excepsion $e){
-            error_log($e);
-            $this->set_GlobalCode_ERROR_SERVER_SIDE_FAILURE();
-        }
-    }
-"""
