@@ -125,12 +125,6 @@ def staticFinalHashMap(localcode):
         v=localcode + "Map",
         v2=localcode + "ReverseMap")
 
-
-def generateParameterGetter(APIName, path, parameters):
-    res = "public static String get" + APIName + "(".join(["String " + x.key + ", " for x in parameters]) + ") {\n"
-    return res + "return testurl + let parameters = InternalParameterClass()\n"
-
-
 def wrapInInterface(classname, code):
     return "public interface {NAME} {{\n{CODE}}}".format(NAME=classname, CODE=ident(code))
 
@@ -210,33 +204,15 @@ def generateGetAPI(path, parameters):
     methodName = path.title().replace('/', "_")
     tmp = ["String " + s.key for s in parameters]
     res = "public static String get" + cAmElCaSe(methodName) + "API(" + ", ".join(tmp) + ") {\n"
-    res += "\treturn testurl + " + stringify(path + "/")
+    res += "\tStringBuilder url = new StringBuilder(testurl + " + stringify(path + "/") + ");\n\t"
     if len(tmp) > 0:
-        line = " + ".join(["\"&" + p.key + "=\" + " + p.key for p in parameters])
-        res += " + \"?" + line[2:]
+        for p in parameters:
+            if p.optional:
+                res += "if(" + p.key + " != null) "
+            res += "url.append(" + stringify("&{CATEGORY}=".format(CATEGORY=p.key)) + ").append(" + p.key + ");\n\t"
 
-    if cAmElCaSe(methodName) == "GetTimeline":
-        res += """;\n}\npublic static String getGetTimelineAPI(int page, int category_id, int value_id) {
-            StringBuilder url = null;
-            url = new StringBuilder(testurl + "/get/timeline/?page=" + page);
-            if (category_id != 0) url.append("&category_id=").append(category_id);
-            if (value_id != 0) url.append("&value_id=").append(value_id);
-            return new String(url)"""
-    elif cAmElCaSe(methodName) == "GetFollowline":
-        res += """;\n}\npublic static String getGetFollowlineAPI(int page, int category_id, int value_id) {
-            StringBuilder url = null;
-            url = new StringBuilder(testurl + "/get/followline/?page=" + page);
-            if (category_id != 0) url.append("&category_id=").append(category_id);
-            if (value_id != 0) url.append("&value_id=").append(value_id);
-            return new String(url)"""
-    elif cAmElCaSe(methodName) == "GetNearline":
-        res += """;\n}\npublic static String getGetNearlineAPI(String lat, String lon, int page, int category_id, int value_id) {
-            StringBuilder url = null;
-            url = new StringBuilder(testurl + "/get/nearline/?lon=" + lon + "&lat=" + lat + "&page=" + page);
-            if (category_id != 0) url.append("&category_id=").append(category_id);
-            if (value_id != 0) url.append("&value_id=").append(value_id);
-            return new String(url)"""
-    return res + ";\n}"
+    res += "return url.toString().replace(" + stringify("/&") + "," + stringify("/?") + ");"
+    return res + "\n}"
 
 
 def generateParameterRegexInImpl(path, parameters):
