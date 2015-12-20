@@ -167,7 +167,7 @@ PAR rest_id 		"^\d{1,9}$"
 URI /set/post
 ############################################################################################
 PAR rest_id 		"^\d{1,9}$"
-PAR movie_name 		"^[0-9_-]+$"
+PAR movie_name 		"^\d{4}(-\d{2}){5}_\d{1,9}$"
 PAR OPT category_id "^\d$"
 PAR OPT value  		"^\d{0,8}$"
 PAR OPT memo 		"^\S{1,140}$"
