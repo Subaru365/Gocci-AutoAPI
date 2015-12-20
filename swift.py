@@ -43,6 +43,10 @@ def generate(everything):
     uriTree = everything.transformURITokensFromFlatArrayToTreeStructureBasedOnTheirPath()
 
     def onURIToken(uri, nodeName):
+
+        if len(uri.errors) == 0:
+            uri.errors.append(tokens.ErrorToken("ERROR_NOT_A_REAL_ERROR", "I'm here to prevent compile problems if there is no error preset."))
+
         # res  = "var apipath: String { get { return " + stringify(uri.path) + " } }\n\n"
         res  = "var apipath = " + stringify(uri.path) + "\n\n"
         res += generateParameterClass(uri.parameters) + "\n\n"
