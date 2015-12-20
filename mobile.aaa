@@ -186,7 +186,8 @@ RES mp4_movie           "^http\S$"
 # RES thumbnail           "^http\S+$"
 # RES value               INTEGER
 ############################################################################################
-
+ERR ERROR_POST_DOES_NOT_EXIST "The post with the provided ID does not exist"
+ERR ERROR_POST_WAS_NEVER_COMPLETED "The video file was never uplaoded to AWS S3"
 
 ############################################################################################
 URI /set/post
