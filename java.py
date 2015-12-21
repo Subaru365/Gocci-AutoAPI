@@ -267,7 +267,7 @@ def generateResponseInImpl(path):
 def generateString(localCode, errorMsgDict):
     res = ""
     for k, v in errorMsgDict.items():
-        res += "\t<string name=" + stringify(localCode + "_" + k) + ">" + v.replace('"', "") + "</string>\n"
+        res += "\t<string name=" + stringify(localCode + "_" + k) + ">" + v.replace('"', "").replace("'", "") + "</string>\n"
     if localCode == "GlobalCode":
         res += "\t<string name=" + stringify(localCode + "_ERROR_UNKNOWN_ERROR") + ">Unknown global error</string>\n"
     return res
