@@ -104,14 +104,38 @@ def generate(everything):
 
     res2 += implClassWithImpl(java_regexImpl)
 
+    def onString(uri):
+
+        localCode = uri.path.title().replace('/', "") + "LocalCode"
+        localtmp = {e.code: stringify(e.msg) for e in uri.errors}
+        res = generateString(localCode, localtmp) + "\n"
+
+        return res
+
+    def utilStringBuilder(eda):
+        classet = ""
+        for node, v in eda.items():
+            if type(v) is dict:
+                classet += utilStringBuilder(v)
+            elif type(v) is tokens.URIToken:
+                classet += onString(v)
+        return classet
+
+    globaltmp = {e.code: stringify(e.msg) for e in everything.globalErrors}
+    stringsbuilder = generateString(globalCode, globaltmp)
+    stringsbuilder += utilStringBuilder(uriTree)
+
     return """package com.inase.android.gocci.datasource.api;
+
+import com.inase.android.gocci.Application_Gocci;
+import com.inase.android.gocci.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;\n\n""" + wrapInInterface(
-        "API3", res2)
+        "API3", res2) + "\n\n\n\n" + stringsbuilder
 
 
 def staticFinalString(varname, value):
@@ -160,9 +184,9 @@ def generateEnum(enumname, items):
 def generateErrorMsgTable(localCode, errorMsgDict):
     res = "public static String " + localCode + "MessageTable(" + localCode + " code) {\n\tif(" + localCode + "Map.isEmpty()) {"
     for k, v in errorMsgDict.items():
-        res += "\n\t\t" + localCode + "Map.put(" + localCode + "." + k + ", " + v + ");"
+        res += "\n\t\t" + localCode + "Map.put(" + localCode + "." + k + ", Application_Gocci.getInstance().getApplicationContext().getString(R.string." + localCode + "_" + k + "));"
     if localCode == "GlobalCode":
-        res += "\n\t\t" + localCode + "Map.put(" + localCode + ".ERROR_UNKNOWN_ERROR, " + stringify("Unknown global error") + ");"
+        res += "\n\t\t" + localCode + "Map.put(" + localCode + ".ERROR_UNKNOWN_ERROR, Application_Gocci.getInstance().getApplicationContext().getString(R.string.GlobalCode_ERROR_UNKNOWN_ERROR));"
     res += "\n\t}\n\t\tString message = null;\n\t\tfor(Map.Entry<" + localCode + ", String> entry : " + localCode + "Map.entrySet()) {\n\t\t\t" \
                                                                                                                     "if(entry.getKey().equals(code)) {\n\t\t\t\tmessage = entry.getValue();\n\t\t\t\tbreak;\n}\n}\nreturn message;\n}"
     return res
@@ -240,6 +264,13 @@ def generateResponseInImpl(path):
     return "@Override\npublic void " + methodName + "(JSONObject jsonObject, PayloadResponseCallback cb) {\n" \
            + generateResponse(path) + "\n}"
 
+def generateString(localCode, errorMsgDict):
+    res = ""
+    for k, v in errorMsgDict.items():
+        res += "\t<string name=" + stringify(localCode + "_" + k) + ">" + v.replace('"', "") + "</string>\n"
+    if localCode == "GlobalCode":
+        res += "\t<string name=" + stringify(localCode + "_ERROR_UNKNOWN_ERROR") + ">Unknown global error</string>\n"
+    return res
 
 def generateResponse(path):
     localCode = path.title().replace('/', "") + "LocalCode"
