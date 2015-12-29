@@ -8,6 +8,13 @@ from util import *
 
 def generate(everything):
 
+    # for uri in everything.uriTokens:
+        # print(uri)
+
+
+    # return generatePayloadType(everything.uriTokens[0].responses) + "\n"
+    # return generatePayloadType(everything.uriTokens[1].responses) + "\n"
+
     masterClassName = "API3"
 
     header = """//
@@ -99,7 +106,6 @@ def generate(everything):
     res += swift_allErrorMessages + "\n\n"
     res += swift_subClasses + "\n\n"
 
-    # res =  generatePayloadType(everything.uriTokens[0].responses) + "\n"
     return  header + wrapInClass(masterClassName, res)
 
 
@@ -208,8 +214,8 @@ def otherStuffThatIsNeededButStatic(classname):
     return """
 func handleLocalError(code: LocalCode, _ mmsg: String? = nil) {{
     let msg = mmsg ?? {CN}.localErrorMessageTable[code] ?? "No error message defined"
-    APISupport.sep("LOCAL ERROR OCCURED")
-    APISupport.log("\(code): \(msg)")
+    APILowLevel.sep("LOCAL ERROR OCCURED")
+    APILowLevel.log("\(code): \(msg)")
     Util.runOnMainThread {{ self.localErrorMapping[code]?(code, msg) }}
     Util.runOnMainThread {{ self.privateOnAllErrorsCallback?() }}
 }}
@@ -263,7 +269,7 @@ func retry() {{
 
 func perform(and: (payload: Payload)->()) {{
     callBackLink = and
-    APISupport.performNetworkRequest(self) {{ (code, msg, json) in
+    APILowLevel.performNetworkRequest(self) {{ (code, msg, json) in
         if code == "SUCCESS" {{
             if let payload = self.validateResponse(json) {{
                 Util.runOnMainThread {{ and(payload: payload) }}
@@ -289,7 +295,7 @@ func retry() {{
 
 func perform(and: ()->()) {{
     callBackLink = and
-    APISupport.performNetworkRequest(self) {{ (code, msg, _) in
+    APILowLevel.performNetworkRequest(self) {{ (code, msg, _) in
         if code == "SUCCESS" {{
             Util.runOnMainThread {{ and() }}
         }}
@@ -312,38 +318,42 @@ def typeToSwiftType(typ):
         return "String!"
     die("Swift parser can't handle type: " + leaf.typ)
 
+def vardec(name, typ, defaultInit = False):
+    if defaultInit:
+        return "var {VARNAME}: {TYPE} = {TYPE}()\n".format(VARNAME=name, TYPE=typ)
+    else:
+        return "var {VARNAME}: {TYPE}\n".format(VARNAME=name, TYPE=typ)
+
+def arrdec(name, typ):
+    return "var {VARNAME}: [{TYPE}] = []\n".format(VARNAME=name, TYPE=typ)
+
+
 def generatePayloadType(responses):
 
     def onleaf(leaf):
         nonlocal payload
-        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=leaf.key, TYPE=typeToSwiftType(leaf.typ))
+        payload += vardec(leaf.key, typeToSwiftType(leaf.typ))
 
-    def onarray(array, typ="[String] = []"):
+    def onarray(leaf):
         nonlocal payload
-        payload += "var {VARNAME}: {TYPE}\n".format(VARNAME=array.key, TYPE=typ)
+        payload += arrdec(leaf.key, typeToSwiftType(leaf.typ))
 
-    def oncompoundarray(compoundarray):
-        # oncomplextype(compoundarray, "[[String: {CLASSNAME}!]] = []", onarray)
-        oncomplextype(compoundarray, "[{CLASSNAME}] = []", onarray)
-
-    def ondict(dictleaf):
-        # oncomplextype(dictleaf, "[String: {CLASSNAME}!] = [:]", onleaf)
-        oncomplextype(dictleaf, "{CLASSNAME} = {CLASSNAME}()", onleaf)
-
-    def oncomplextype(complextype, typestr, typegenerator):
+    def oncomplextype(complextype):
         # This is magic^^
         nonlocal payload
-        payload += "\n"
-        clas = cAmElCaSe(complextype.key)
-        typegenerator(complextype, typestr.format(CLASSNAME=clas))
+        classname = cAmElCaSe(complextype.key)
+        if type(complextype) is tokens.ResponseDictonaryToken:
+            payload += "\n" + vardec(complextype.key, classname)
+        else:
+            payload += "\n" + arrdec(complextype.key, classname)
         tmp = payload
         payload = ""
-        visitor(clas, complextype)
+        visitor(classname, complextype)
         payload = tmp + payload
     
     def visitor(className, root):
         nonlocal payload
-        root.traverse(onleaf, onarray, oncompoundarray, ondict)
+        root.traverse(onleaf, onarray, oncomplextype, oncomplextype)
         payload = "" if payload == "" else "class "+className+" {\n" + ident(payload) + "}\n"
 
     payload = ""
