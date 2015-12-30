@@ -1,19 +1,10 @@
 
-import tokens
-import textwrap
 import datetime
 from util import *
-
+from tokens import *
 
 
 def generate(everything):
-
-    # for uri in everything.uriTokens:
-        # print(uri)
-
-
-    # return generatePayloadType(everything.uriTokens[0].responses) + "\n"
-    # return generatePayloadType(everything.uriTokens[1].responses) + "\n"
 
     masterClassName = "API3"
 
@@ -50,15 +41,9 @@ def generate(everything):
     uriTree = everything.transformURITokensFromFlatArrayToTreeStructureBasedOnTheirPath()
 
     def onURIToken(uri, nodeName):
-
-        if len(uri.errors) == 0:
-            uri.errors.append(tokens.ErrorToken("ERROR_NOT_A_REAL_ERROR", "I'm here to prevent compile problems if there is no error preset."))
-
-        # res  = "var apipath: String { get { return " + stringify(uri.path) + " } }\n\n"
         res  = "var apipath = " + stringify(uri.path) + "\n\n"
         res += generateParameterClass(uri.parameters) + "\n\n"
         res += "var localErrorMapping: [LocalCode: (LocalCode, String)->()] = [:]\n\n"
-        # res += "var onUnhandledError: (LocalCode, String)->() = { print(\"FATAL: UNHANDLED API ERROR: \($0): \($1)\") }\n\n"
         res += generateEnum("LocalCode", [ e.code for e in uri.errors ] ) + "\n\n"
 
         res += "func canHandleErrorCode(code: String) -> Bool {\n    return " + nodeName + ".localErrorReverseLookupTable[code] != nil\n}\n\n"
@@ -90,7 +75,7 @@ def generate(everything):
             if type(v) is dict:
                 code = ident(subClassBuilder(v))
                 classet += "class {CN} {{\n\n{CODE} }}\n\n".format(CN=node, CODE=code)
-            elif type(v) is tokens.URIToken:
+            elif type(v) is URIToken:
                 classet += wrapInClass(node, onURIToken(v, node), "APIRequest", "APIRequestProtocol") + "\n"
         return classet
 
@@ -104,9 +89,9 @@ def generate(everything):
     res += swift_allErrorsAsEnum + "\n\n"
     res += swift_codeReverseLookUpTable + "\n\n"
     res += swift_allErrorMessages + "\n\n"
-    res += swift_subClasses + "\n\n"
+    res += swift_subClasses
 
-    return  header + wrapInClass(masterClassName, res)
+    return header + wrapInClass(masterClassName, res)
 
 
 
@@ -197,7 +182,6 @@ else {{
 
 
 def generateOneParameterRegExCheck(tablename, parameter, regex):
-
     return  """
 if let value = {MAPNAME}["{PARAMETER}"] {{
     if !value.matches({REGEX}) {{
@@ -221,41 +205,7 @@ func handleLocalError(code: LocalCode, _ mmsg: String? = nil) {{
 }}
 """.format(CN=classname)
 
-#func validateSimpleResponse(json: [String: JSON], _ value: String, _ regex: String, _ misErr: LocalCode, _ malErr: LocalCode ) -> String? {{
-#    if let value = json[value]?.string {{
-#        if !value.matches(regex) {{
-#            handleLocalError(malErr)
-#            return nil
-#        }}
-#        else {{
-#            return value
-#        }}
-#    }}
-#    else {{
-#        handleLocalError(misErr)
-#        return nil
-#    }}
-#}}
-#
-#func validateSimpleArrayResponse(json: [String: JSON], _ value: String, _ regex: String, _ misErr: LocalCode, _ malErr: LocalCode ) -> [String]? {{
-#    if let values = (json as? [String: [String!]])?[value] {{
-#        var res: [String] = []
-#        for value in values {{
-#            if !value.matches(regex) {{
-#                handleLocalError(malErr)
-#                return nil
-#            }}
-#            else {{
-#                res.append(value)
-#            }}
-#        }}
-#        return res
-#    }}
-#    else {{
-#        handleLocalError(misErr)
-#        return nil
-#    }}
-#}}
+
 
 def performFunctionWithPayload(classname):
     return """
@@ -271,7 +221,7 @@ func perform(and: (payload: Payload)->()) {{
     callBackLink = and
     APILowLevel.performNetworkRequest(self) {{ (code, msg, json) in
         if code == "SUCCESS" {{
-            if let payload = self.validateResponse(json) {{
+            if let payload = self.validateResponse_Payload(json) {{
                 Util.runOnMainThread {{ and(payload: payload) }}
             }}
         }}
@@ -308,13 +258,13 @@ func perform(and: ()->()) {{
 """.format(CN=classname)
 
 def typeToSwiftType(typ):
-    if typ == tokens.ResponseType.INTEGER:
+    if typ == ResponseType.INTEGER:
         return "Int!"
-    elif typ == tokens.ResponseType.FLOAT:
+    elif typ == ResponseType.FLOAT:
         return "Double!"
-    elif typ == tokens.ResponseType.BOOLEAN:
+    elif typ == ResponseType.BOOLEAN:
         return "Bool!"
-    elif typ == tokens.ResponseType.STRING:
+    elif typ == ResponseType.STRING:
         return "String!"
     die("Swift parser can't handle type: " + leaf.typ)
 
@@ -342,8 +292,8 @@ def generatePayloadType(responses):
         # This is magic^^
         nonlocal payload
         classname = cAmElCaSe(complextype.key)
-        if type(complextype) is tokens.ResponseDictonaryToken:
-            payload += "\n" + vardec(complextype.key, classname)
+        if type(complextype) is ResponseDictonaryToken:
+            payload += "\n" + vardec(complextype.key, classname, True)
         else:
             payload += "\n" + arrdec(complextype.key, classname)
         tmp = payload
@@ -361,112 +311,148 @@ def generatePayloadType(responses):
     return payload
 
 
-def swiftlyJSONtypeConversation(leaf):
-    if leaf.typ == tokens.ResponseType.INTEGER:
+
+
+
+def swiftlyJSONtypeConversation(typ):
+    if typ == ResponseType.INTEGER:
         return "int"
-    elif leaf.typ == tokens.ResponseType.FLOAT:
+    elif typ == ResponseType.FLOAT:
         return "double"
-    elif leaf.typ == tokens.ResponseType.BOOLEAN:
+    elif typ == ResponseType.BOOLEAN:
         return "bool"
-    elif leaf.typ == tokens.ResponseType.STRING:
+    elif typ == ResponseType.STRING:
         return "string"
     else:
-        die("Swift parser can't handle type: " + leaf.typ)
+        die("Swift parser can't handle type: " + typ)
+
+
+
+def verifySimpleResponse(key, typ, missingError):
+    jsontyp = swiftlyJSONtypeConversation(typ)
+    return """
+if let {KEY} = json["{KEY}"]?.{TYP} {{
+    res.{KEY} = {KEY}
+}}
+else {{
+    handleLocalError(.{MISSERR})
+    return nil
+}}
+""".format(KEY=key, TYP=jsontyp, MISSERR=missingError) 
+
+
+
+def verifySimpleArrayResponse(key, typ, missingError):
+    jsontyp = swiftlyJSONtypeConversation(typ)
+    return """
+if let {KEY}_array = json["{KEY}"]?.array {{
+    for elem in {KEY}_array {{
+        if let {KEY} = elem.{TYP} {{
+            res.{KEY}.append({KEY})
+        }}
+        else {{
+            handleLocalError(.{MISSERR})
+            return nil
+        }}
+    }}
+}}
+else {{
+    handleLocalError(.{MISSERR})
+    return nil
+}}
+""".format(KEY=key, TYP=jsontyp, MISSERR=missingError) 
+
+
+
+def verifyComplexResponsePreface(leaf, funcname):
+    jsontype = "dictionary" if type(leaf) is ResponseDictonaryToken else "array"
+    return """
+if let {KEY}_unvalidated = json["{KEY}"]?.{JSONTYPE} {{
+    guard let {KEY} = {FUNCNAME}({KEY}_unvalidated) else {{
+        return nil // error handled in {FUNCNAME}
+    }}
+    res.{KEY} = {KEY}
+}}
+else {{
+    handleLocalError(.{MISSERR})
+    return nil
+}}""".format(KEY=leaf.key , FUNCNAME=funcname , MISSERR=leaf.corrospondigMissingError.code, JSONTYPE=jsontype)
+
+
+
+def verifyComplexArrayIntermediateStep(funcname, typepath, misserr):
+    return """
+func {FUNCNAME}(jsonArray: [JSON]) -> [{TP}]? {{
+    var res: [{TP}] = []
+    
+    for jsonBlock in jsonArray {{
+        guard let json = jsonBlock.dictionary else {{
+            handleLocalError(.{MISSERR})
+            return nil
+        }}
+        guard let one = {FUNCNAME}_Element(json) else {{
+            return nil // error handled in {FUNCNAME}_Element
+        }}
+        res.append(one)
+    }}
+    
+    return res
+}}""".format(FUNCNAME=funcname, TP=typepath, MISSERR=misserr )
+
+
+
+def makeValidatorFunction(funcname, typepath, content):
+    vali = "func "+ funcname +"(json: [String: JSON]) -> " + typepath # Payload.RestsDict? {
+    vali += "? {\n    let res = " + typepath + "()\n"
+    for check in content:
+        vali += ident(check) + "\n"
+    return vali + "    return res\n}\n"
+
+
 
 def generateNonValidatingJSONParser(responses):
 
     def onleaf(leaf):
-        typ = swiftlyJSONtypeConversation(leaf)
-        nonlocal validator
-        clause = """
-if let {KEY} = json["{KEY}"]?.{TYP} {{
-    payload.{KEY} = {KEY}
-}}
-else {{
-    handleLocalError(.{MERR})
-    return nil
-}}
-"""
-        validator += clause.format(KEY=leaf.key, TYP=swiftlyJSONtypeConversation(leaf), MERR=leaf.corrospondigMissingError.code) 
+        current.append(verifySimpleResponse(leaf.key, leaf.typ, leaf.corrospondigMissingError.code))
 
+    def onarray(leaf):
+        current.append(verifySimpleArrayResponse(leaf.key, leaf.typ, leaf.corrospondigMissingError.code))
 
-    def masterWrap(entry):
-        nonlocal validator
-        pre = "func validateResponse(json: [String: JSON]) -> Payload? {\n    let payload = Payload()\n\n"
-        entry.traverse(onleaf)
-        validator = pre + ident(validator) + "\n    return payload\n}\n"
-    
-    validator = "" 
-    masterWrap(responses)
-    return "" if not responses.leafs else validator
+    def oncomplex(leaf):
+        if not leaf.leafs:
+            return
 
-# def generateValidatingJSONParser(responses):
+        nonlocal current
+        keystack.append(cAmElCaSe(leaf.key))
+        funcname = "validateResponse_" + "_".join(keystack)
+        current.append(verifyComplexResponsePreface(leaf, funcname))
 
-    # def onleaf(leaf):
-        # nonlocal validator
-        # if leaf.typ != tokens.ResponseType.STRING:
-            # validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
-            # return
-        # validator += """{VARPATH}.{KEY} = validateSimpleResponse(json, "{KEY}", {RE},\n     .{MISERR}, .{MALERR})
-# if {VARPATH}.{KEY} == nil {{ return nil }}\n
-# """.format(VARPATH=".".join(varstack), KEY=leaf.key, RE=regexify(leaf.regex), MISERR=leaf.corrospondigMissingError.code, MALERR=leaf.corrospondigMalformError.code)
+        # save current depth level
+        tmp = current
+        current = []
 
-    # def onarray(array):
-        # nonlocal validator
-        # if leaf.typ != tokens.ResponseType.STRING:
-            # validator += "// TODO WARNING '" + leaf.key + "' non string type response validation not implemented jet. Wait for rewrite\n"
-            # return
-        # validator += """if let tmp = validateSimpleArrayResponse(json, "{KEY}", {RE},\n    .{MISERR}, .{MALERR}) {{
-    # {VARPATH}.{KEY} == tmp\n}}\nelse {{ return nil }}\n
-# """.format(VARPATH=".".join(varstack), KEY=array.key, RE=regexify(array.regex), MISERR=array.corrospondigMissingError.code, MALERR=array.corrospondigMalformError.code)
-
-    # def oncompoundarray(compoundarray):
-        # nonlocal validator
-        # nonlocal varstack
-        # typestack.append(cAmElCaSe(compoundarray.key))
-        # pre = "if let arraydict = (json as? [String: [[String: {TYPEPATH}!]]])?[{KEY}] {{\n"
-        # pre += ident("for json in arraydict {{\n    let tmp = {TYPEPATH}()\n\n")
-        # validator += pre.format(TYPEPATH=".".join(typestack), KEY=stringify(compoundarray.key)) 
-        # currentvarstack = varstack
-        # varstack = ["tmp"]
-        # stepDownMagic(compoundarray, True)
-        # varstack = currentvarstack
-        # post = ident("    {VARPATH}.{KEY}.append(tmp)\n").format(VARPATH=".".join(varstack), KEY=compoundarray.key)+ "    }\n"
-        # validator += post +  "}\nelse {\n    handleLocalError(."+ compoundarray.corrospondigMissingError.code +")\n}\n\n"
-
-    # def ondict(dictleaf):
-        # nonlocal validator
-        # typestack.append(cAmElCaSe(dictleaf.key))
-        # varstack.append(dictleaf.key)
-        # pre = "if let json = (json as? [String: [String: {TYPEPATH}!]])?[{KEY}] {{\n\n"
-        # validator += pre.format(TYPEPATH=".".join(typestack), KEY=stringify(dictleaf.key)) 
-        # stepDownMagic(dictleaf)
-        # validator += "}\nelse {\n    handleLocalError(."+ dictleaf.corrospondigMissingError.code +")\n}\n\n"
-        # varstack.pop()
-
-    # def stepDownMagic(complextype, twice=False):
-        # nonlocal validator
-        # tmp = validator
-        # validator = ""
-        # complextype.traverse(onleaf, onarray, oncompoundarray, ondict)
-        # validator = tmp + (ident(ident(validator)) if twice else ident(validator))
-        # typestack.pop()
-
-    # def masterWrap(entry):
-        # nonlocal validator
-        # pre = "func validateResponse(json: [String: JSON]) -> Payload? {\n    let payload = Payload()\n\n"
-        # entry.traverse(onleaf, onarray, oncompoundarray, ondict)
-        # validator = pre + ident(validator) + "\n    return payload\n}\n"
-    
-    # typestack = ["Payload"]
-    # varstack  = ["payload"]
-    # validator = "" 
-    # masterWrap(responses)
-    # return "" if not responses.leafs else validator
-
- 
-            
-            
+        # step down
+        leaf.traverse(onleaf, onarray, oncomplex, oncomplex)
         
-            
- 
+        if type(leaf) is ResponseDictonaryToken:
+            validators.append(makeValidatorFunction(funcname, ".".join(keystack), current))
+        else:
+            validators.append(verifyComplexArrayIntermediateStep(funcname, ".".join(keystack), leaf.corrospondigMissingError.code))
+            validators.append(makeValidatorFunction(funcname + "_Element", ".".join(keystack), current))
+
+        # stack cleanup
+        keystack.pop()
+        current = tmp
+
+
+    current = []
+    validators = []
+    keystack = []
+    
+    oncomplex(responses)
+
+    return "\n".join(reversed(validators))
+
+
+
+

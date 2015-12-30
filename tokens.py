@@ -114,9 +114,10 @@ class URIToken:
             l.traverse(onsimple, onsimple, oncomplex, oncomplex)
             keystack.pop()
 
-
         keystack = []
         resps.traverse(onsimple, onsimple, oncomplex, oncomplex)
+        resps.corrospondigMissingError = ErrorToken("ERROR_RESPONSE_PAYLOAD_MISSING", "The whole payload is missing")
+        self.errors.append(resps.corrospondigMissingError)
 
     def autoGenerateMalformErrors(self):
         self.onlyExclusiveErrors = list(self.errors)

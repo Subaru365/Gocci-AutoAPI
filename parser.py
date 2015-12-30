@@ -77,7 +77,7 @@ def parseResponseArrayCompound(firstline, iterator, level=1):
         if nextline.startswith("RES ARRAY END"):
             return res
         elif nextline.startswith("RES ARRAY"):
-            res.add(parseResponseArrayCompound(nextline, iterator, level+1))
+            res.add(parseResponseArrayPre(nextline, iterator, level+1))
         elif nextline.startswith("RES"):
             res.add(parseResponseLine(nextline, iterator, level))
         else:
