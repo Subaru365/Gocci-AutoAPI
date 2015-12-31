@@ -6,9 +6,9 @@ TARGET="jidou"
 # PARAMETER="--json mobile.aaa"
 # PARAMETER="--json tmp.aaa"
 # PARAMETER="--swift for_gocci_ios_v2.aaa"
-PARAMETER="--swift tmp.aaa"
+# PARAMETER="--swift tmp2.aaa"
 # PARAMETER="--swift syntaxtest.aaa"
-# PARAMETER="--swift mobile.aaa"
+PARAMETER="--swift mobile.aaa"
 # PARAMETER="--server"
 
 #########################################################################################################################
