@@ -278,6 +278,7 @@ RES ARRAY posts
     RES user_id             "^\d{1,9}$"
     RES username    		"^[^\p{Cntrl}]{1,20}$"
     RES value               INTEGER
+    RES profile_img 	    "^http\S{1,2000}"
 RES ARRAY END
 #############################################################################################
 
@@ -303,6 +304,7 @@ RES ARRAY posts
     RES user_id             "^\d{1,9}$"
     RES username 	    	"^[^\p{Cntrl}]{1,20}$"
     RES value               INTEGER
+    RES profile_img 	    "^http\S{1,2000}"
 RES ARRAY END
 ############################################################################################
 
@@ -328,6 +330,7 @@ RES ARRAY posts
     RES user_id             "^\d{1,9}$"
     RES username 	    	"^[^\p{Cntrl}]{1,20}$"
     RES value               INTEGER
+    RES profile_img 	    "^http\S{1,2000}"
 RES ARRAY END
 #############################################################################################
 
@@ -346,7 +349,8 @@ RES DICT user
     RES profile_img 	    "^http\S{1,2000}"
     RES user_id             "^\d{1,9}$"
     RES username 	    	"^[^\p{Cntrl}]{1,20}$"
-    RES want_num            INTEGER
+    RES post_num            INTEGER
+    RES gochi_num           INTEGER
 RES DICT END
 RES ARRAY posts
     RES category            "^\S[1,20]$"
@@ -384,7 +388,6 @@ RES DICT rest
     RES rest_id             "^\d{1,9}$"
     RES restname 		    "^[^\p{Cntrl}]{1,80}$"
     RES tell                "^[0-9-]{9,20}$"
-    RES want_flag           BOOLEAN
 RES DICT END
 RES ARRAY posts
     RES category            "^\S[1,20]$"
