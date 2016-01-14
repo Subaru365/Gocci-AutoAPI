@@ -16,7 +16,7 @@ def generate(everything):
         res["uris"][uri.path] = { "parameters": {}, "responses": {}, "errors": {} }
 
     for uri in everything.uriTokens:
-        res["uris"][uri.path]["parameters"] = { para.key : {"regex": para.regex, "optional": para.optional } for para in uri.parameters }
+        res["uris"][uri.path]["parameters"] = { para.key : {"regex": para.regex, "optional": para.optional, "default" : para.default } for para in uri.parameters }
 
     for uri in everything.uriTokens:
         res["uris"][uri.path]["errors"] = { err.code : err.msg for err in uri.errors }

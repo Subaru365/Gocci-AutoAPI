@@ -28,19 +28,24 @@ def parseLineOrErrorOut(regex, line, emsg):
             die(emsg + " does not correspond to regex: '"+regex+"'\nFailed on Line: '" + line + "'")
 
 def parseParameterLine(line):
-    so = parseLineOrErrorOut(r'^PAR\s+(OPT\s+)?([a-z][a-z0-9_]*)\s+"(.+)"$', line, "PARSING ERROR: PAR Parameter")
-    return ParameterToken(key = so.group(2), re = so.group(3), optional = so.group(1) != None)
+    so = parseLineOrErrorOut(r'^PAR\s+(OPT\s+)?([a-z][a-z0-9_]*)\s+"(.+?)"(\s+DEFAULT\s+"(.+?)")?$', line, "PARSING ERROR: PAR Parameter")
+    # print(" 1:" + str(so.group(1)))
+    # print(" 2:" + str(so.group(2)))
+    # print(" 3:" + str(so.group(3)))
+    # print(" 4:" + str(so.group(4)))
+    # print(" 5:" + str(so.group(5)))
+    return ParameterToken(key = so.group(2), re = so.group(3), optional = so.group(1) != None, default = so.group(5))
 
 def parseErrorLine(line):
-    so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
+    so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Local Line")
     return ErrorToken(so.group(1), so.group(2))
 
 def parseGlobalError(line):
-    so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
+    so = parseLineOrErrorOut(r'^\w\w\w\s+([A-Z_]+)\s+"(.+)"$', line, "PARSING ERROR: ERR Global Line")
     return ErrorToken(so.group(1), so.group(2))
 
 def parseAPIDictLine(line, apidict):
-    so = parseLineOrErrorOut(r'^API\s+"([a-zA-Z0-9_]+)"\s+"(.+)"$', line, "PARSING ERROR: ERR Error")
+    so = parseLineOrErrorOut(r'^API\s+"([a-zA-Z0-9_]+)"\s+"(.+)"$', line, "PARSING ERROR: API Line")
     apidict.addPair(so.group(1), so.group(2))
 
 

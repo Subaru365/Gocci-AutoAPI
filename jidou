@@ -17,7 +17,7 @@ import server
 SourceTarget = Enum(["SWIFT", "JAVA", "PHP", "JS", "JSON"])
 
 VERSION_MAJOR=4
-VERSION_MINOR=0
+VERSION_MINOR=1
 VERSION = str(VERSION_MAJOR) + "." + str(VERSION_MINOR)
 
 

@@ -136,10 +136,11 @@ class ErrorToken:
 
 
 class ParameterToken:
-    def __init__(self, key, re, optional=False):
+    def __init__(self, key, re, optional=False, default=None):
         self.key = key
         self.regex = re
         self.optional = optional
+        self.default = default
         self.corrospondigMalformError = None
         self.corrospondigMissingError = None
 
