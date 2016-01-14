@@ -144,7 +144,7 @@ def parse(infile, vmajor, vminor):
         if line.startswith("VER"):
             so = parseLineOrErrorOut(r'VER\s+(\d+)\.(\d+)$', line, "PARSING ERROR: VER Version definition" )
             if vmajor < int(so.group(1)) or ( vmajor == int(so.group(1)) and vminor < int(so.group(2))):
-                die("ERROR: Parser version (" + VERSION + ") too low for AAA file ("+ so.group(1) +"."+ so.group(2)+")")
+                die("ERROR: Parser version (" + str(vmajor) + "." + str(vminor) + ") too low for AAA file ("+ so.group(1) +"."+ so.group(2)+")")
             else:
                 msg("AAA File version: " + so.group(1) +"."+ so.group(2))
                 aaaversion = so.group(1) +"."+ so.group(2)
