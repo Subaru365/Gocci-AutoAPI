@@ -510,6 +510,7 @@ PAR user_id         "^\d{1,9}$"
 #############################################################################################
 RES ARRAY users
     RES follow_flag         BOOLEAN
+    RES gochi_num           INTEGER
     RES profile_img     	"^http\S{1,2000}"
     RES user_id             "^\d{1,9}$"
     RES username 	    	"^[^\p{Cntrl}]{1,20}$"
@@ -524,6 +525,7 @@ PAR user_id         "^\d{1,9}$"
 #############################################################################################
 RES ARRAY users
     RES follow_flag         BOOLEAN
+    RES gochi_num           INTEGER
     RES profile_img 	    "^http\S{1,2000}"
     RES user_id             "^\d{1,9}$"
     RES username 		    "^[^\p{Cntrl}]{1,20}$"
@@ -549,10 +551,12 @@ URI /get/rest_cheer
 ##############################################################################################
 PAR rest_id         "^\d{1,9}$"
 #############################################################################################
-RES ARRAY rests
-    RES locality            "^[^\p{Cntrl}]{1,100}$"
-    RES rest_id             "^\d{1,9}$"
-    RES restname 		    "^[^\p{Cntrl}]{1,80}$"
+RES ARRAY users
+    RES follow_flag         BOOLEAN
+    RES gochi_num           INTEGER
+    RES profile_img 	    "^http\S{1,2000}"
+    RES user_id             "^\d{1,9}$"
+    RES username 		    "^[^\p{Cntrl}]{1,20}$"
 RES ARRAY END
 ##############################################################################################
 
