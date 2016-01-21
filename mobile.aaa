@@ -212,10 +212,10 @@ URI /set/post
 ############################################################################################
 PAR rest_id 		"^\d{1,9}$"
 PAR movie_name 		"^\d{4}(-\d{2}){5}_\d{1,9}$"
-PAR OPT category_id "^\d{1,9}$"
-PAR OPT value  		"^\d{1,9}$"
-PAR OPT memo 		"^(\n|[^\p{Cntrl}]){1,140}$"
-PAR OPT cheer_flag  "^1|0$"
+PAR OPT category_id "^\d{1,9}$"                      DEFAULT "1" 
+PAR OPT value  		"^\d{1,9}$"                      DEFAULT "0"
+PAR OPT memo 		"^(\n|[^\p{Cntrl}]){1,140}$"     DEFAULT "none"
+PAR OPT cheer_flag  "^1|0$"                          DEFAULT "0"
 ############################################################################################
 RES post_id 		"^\d{1,9}$"
 
