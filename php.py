@@ -10,19 +10,22 @@ def generate(everything):
  * Parameter list of uri.
  *
  * @package    Gocci-Mobile
- * @version    3.0.0 (2015/12/09)
+ * @version    4.0.0 (2016/1/21)
  * @author     Subaru365 (a-murata@inase-inc.jp)
  * @copyright  (C) 2015 Akira Murata
  * @link       https://bitbucket.org/inase/gocci-mobile-api
  */
 
-class Model_V3_Param extends Model
+class Model_V4_Param extends Model
 {{
     use SingletonTrait;
+
+    public $status = array();
 
     private $uri_path;
 
     private $req_params = array();
+
 
     private $status = array(
         'version'   => {VER},
@@ -33,47 +36,31 @@ class Model_V3_Param extends Model
     );
 
 
-    public function __get($name)
-    {
-        if ($name === 'getRequest') {
-            if (empty($this->status['code'])) {
-                return $this->req_params;
-            } else {
-                error_log($this->status['code']);
-                return false;
-            }
-        }
-    }
-
-
     public function getRequest($input_params)
     {{
-        $uri  = substr(Uri::string(), 4);
+        $uri  = substr(Uri::string(), 3);
         $this->uri_path     = str_replace("/", "_", $uri);
-        $req_function_name  = "setReqParams{{$this->uri_path}}";
+        $req_function_name  = "setReqParams_".$this->uri_path;
 
-        $this->$req_function_name($input_params);
+        try {{
+            $this->$req_function_name($input_params);
+        }}
+        catch (Throwable $e){{
+            $this->setGlobalCode_ERROR_CLIENT_OUTDATED();
+            $json = json_encode(
+                $this->status,
+                JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|
+                JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_QUOT
+            );
+            echo $json;
+            exit;
+        }}
 
         return $this->req_params;
     }}
 
-
-    public function setResponse($params)
-    {{
-        $res_function_name = "setPayload{{$this->uri_path}}";
-
-        try {{
-            $this->$res_function_name($params);
-            $this->set_GlobalCode_SUCCESS();
-
-        }} catch (Excepsion $e){{
-            error_log($e);
-            $this->set_GlobalCode_ERROR_SERVER_SIDE_FAILURE();
-        }}
-    }}
-
-
 """.format(VER=everything.version)
+
 
     uripaths = [(uri.path, uri.normalizedKey()) for uri in everything.uriTokens]
     res += generateCodeFunction("GlobalCode", [(e.code, e.msg) for e in everything.globalErrors])
@@ -93,13 +80,14 @@ class Model_V3_Param extends Model
     return ident(res)
 
 
-def generateCodeFunction(switchname, codes):
+def generateCodeFunction(fname, codes):
 
     fnc = ''
     for (code, msg) in codes:
-        res =  "$this->code = '{CODE}';\n".format(CODE=code)
-        res += "$this->message = \"{MSG}\";\n".format(MSG=msg)
-        fnc +=  wrapInPublicVoidFunction("set"+switchname+"_"+code, res)
+        res =  "$this->status['code']    = '{CODE}';\n".format(CODE=code)
+        res += "$this->status['message'] = \"{MSG}\";\n".format(MSG=msg)
+        res += "$this->status['payload'] = $payload;\n"
+        fnc += "public function {NAME}($payload = json_decode('{{}}'))\n{{\n{CODE}}}\n\n\n".format(NAME="set"+fname+"_"+code, CODE=ident(res))
 
     return fnc
 
@@ -110,7 +98,7 @@ def generateSetRequestParameter(uriname, parameters):
     for p in parameters:
 
         if not p.optional:
-            res += "if(!empty($input_params['{KEY}'])) {{\n\n".format(KEY=p.key)
+            opt_res += "if(!empty($input_params['{KEY}'])) {{\n\n".format(KEY=p.key)
 
         res += "if(preg_match('/{REGEX}/', $input_params['{KEY}'])) {{\n".format(REGEX=p.regex, KEY=p.key)
         res += "    $this->req_params['{KEY}'] = $input_params['{KEY}']\n\n".format(KEY=p.key)
@@ -121,6 +109,7 @@ def generateSetRequestParameter(uriname, parameters):
         res += "}\n\n"
 
         if not p.optional:
+            res =  opt_res + res
             res += "} else {\n"
             res += "    $this->code    = '{CODE}'\n".format(CODE=p.corrospondigMissingError.code)
             res += "    $this->message = \"{MSG}\"\n".format(MSG=p.corrospondigMissingError.msg)
@@ -169,8 +158,8 @@ def wrapInClass(cname, code):
     return "class {NAME} extends Model\n{{\n{CODE}\n}}\n\n".format(NAME=cname, CODE=ident(code))
 
 
-def wrapInPublicVoidFunction(fname, code):
-    return "public function {NAME}()\n{{\n{CODE}}}\n\n\n".format(NAME=fname, CODE=ident(code))
+# def wrapInPublicVoidFunction(fname, code):
+#     return "public function {NAME}()\n{{\n{CODE}}}\n\n\n".format(NAME=fname, CODE=ident(code))
 
 
 def wrapInPivateFunction(fname, code, arg=''):
