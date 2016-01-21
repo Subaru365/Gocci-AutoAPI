@@ -4,7 +4,7 @@ from util import *
 
 def generate(everything):
 
-    res = """
+    tmp = """
 <?php
 /**
  * Parameter list of uri.
@@ -27,13 +27,16 @@ class Model_V4_Param extends Model
     private $req_params = array();
 
 
-    private $status = array(
-        'version'   => {VER},
-        'uri'       => Uri::string(),
-        'code'      => '',
-        'message'   => '',
-        'payload'   => json_decode('{{}}'),
-    );
+    private function __construct()
+    {{
+        $this->status = array(
+            'version'   => {VER},
+            'uri'       => Uri::string(),
+            'code'      => '',
+            'message'   => '',
+            'payload'   => json_decode('{{}}'),
+        );
+    }}
 
 
     public function getRequest($input_params)
@@ -59,8 +62,10 @@ class Model_V4_Param extends Model
         return $this->req_params;
     }}
 
+
 """.format(VER=everything.version)
 
+    res = ''
 
     uripaths = [(uri.path, uri.normalizedKey()) for uri in everything.uriTokens]
     res += generateCodeFunction("GlobalCode", [(e.code, e.msg) for e in everything.globalErrors])
@@ -75,9 +80,9 @@ class Model_V4_Param extends Model
 
         res += generateCodeFunction(uri.normalizedKey(), exclusiveErrors)
 
-    res += "}\n"
+    code = tmp + ident(res) + "}\n"
 
-    return ident(res)
+    return code
 
 
 def generateCodeFunction(fname, codes):
@@ -86,34 +91,41 @@ def generateCodeFunction(fname, codes):
     for (code, msg) in codes:
         res =  "$this->status['code']    = '{CODE}';\n".format(CODE=code)
         res += "$this->status['message'] = \"{MSG}\";\n".format(MSG=msg)
-        res += "$this->status['payload'] = $payload;\n"
-        fnc += "public function {NAME}($payload = json_decode('{{}}'))\n{{\n{CODE}}}\n\n\n".format(NAME="set"+fname+"_"+code, CODE=ident(res))
+        res += "if (!empty($payload)) {\n"
+        res += "    $this->status['payload'] = $payload;\n"
+        res += "}\n"
+        fnc += "public function {NAME}($payload = '')\n{{\n{CODE}}}\n\n\n".format(NAME="set"+fname+"_"+code, CODE=ident(res))
 
     return fnc
 
 
 def generateSetRequestParameter(uriname, parameters):
 
-    res = ""
+    res = ''
     for p in parameters:
 
-        if not p.optional:
-            opt_res += "if(!empty($input_params['{KEY}'])) {{\n\n".format(KEY=p.key)
+        mid =  "if(!empty($input_params['{KEY}'])) {{\n\n".format(KEY=p.key)
+        mid += "    if(preg_match('/{REGEX}/', $input_params['{KEY}'])) {{\n".format(REGEX=p.regex, KEY=p.key)
+        mid += "        $this->req_params['{KEY}'] = $input_params['{KEY}'];\n\n".format(KEY=p.key)
 
-        res += "if(preg_match('/{REGEX}/', $input_params['{KEY}'])) {{\n".format(REGEX=p.regex, KEY=p.key)
-        res += "    $this->req_params['{KEY}'] = $input_params['{KEY}']\n\n".format(KEY=p.key)
-
-        res += "} else {\n"
-        res += "    $this->code    = '{CODE}'\n".format(CODE=p.corrospondigMalformError.code)
-        res += "    $this->message = \"{MSG}\"\n".format(MSG=p.corrospondigMalformError.msg)
-        res += "}\n\n"
+        mid += "    } else {\n"
+        mid += "        $this->status['code']    = '{CODE}';\n".format(CODE=p.corrospondigMalformError.code)
+        mid += "        $this->status['message'] = \"{MSG}\";\n".format(MSG=p.corrospondigMalformError.msg)
+        mid += "    }\n\n"
 
         if not p.optional:
-            res =  opt_res + res
-            res += "} else {\n"
-            res += "    $this->code    = '{CODE}'\n".format(CODE=p.corrospondigMissingError.code)
-            res += "    $this->message = \"{MSG}\"\n".format(MSG=p.corrospondigMissingError.msg)
-            res += "}\n\n"
+            las = "} else {\n"
+            las += "    $this->status['code']    = '{CODE}';\n".format(CODE=p.corrospondigMissingError.code)
+            las += "    $this->status['message'] = \"{MSG}\";\n".format(MSG=p.corrospondigMissingError.msg)
+            las += "}\n\n"
+            res += mid + las
+        elif not p.default==None:
+            las = "} else {\n"
+            las += "    $this->req_params['{KEY}'] = '{DEF}';\n".format(KEY=p.key, DEF=p.default)
+            las += "}\n\n"
+            res += mid + las
+        else:
+            res += mid + "}\n\n"
 
     return wrapInPivateFunction("setReqParams"+uriname, res, "$input_params")
 
