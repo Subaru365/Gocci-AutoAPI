@@ -6,7 +6,7 @@ from tokens import *
 
 def generate(everything):
 
-    masterClassName = "API3"
+    masterClassName = "API" + everything.version[0]
 
     header = """//
 //   {MCN}.swift 
