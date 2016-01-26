@@ -212,7 +212,7 @@ URI /set/post
 ############################################################################################
 PAR rest_id 		"^\d{1,9}$"
 PAR movie_name 		"^\d{4}(-\d{2}){5}_\d{1,9}$"
-PAR OPT category_id "^\d{1,9}$"                      DEFAULT "1" 
+PAR OPT category_id "^\d{1,9}$"                      DEFAULT "1"
 PAR OPT value  		"^\d{1,9}$"                      DEFAULT "0"
 PAR OPT memo 		"^(\n|[^\p{Cntrl}]){1,140}$"     DEFAULT "none"
 PAR OPT cheer_flag  "^1|0$"                          DEFAULT "0"
@@ -564,7 +564,7 @@ RES ARRAY END
 #############################################################################################
 URI /get/follower_rank
 ##############################################################################################
-PAR OPT page        "^\d{1,9}$"
+PAR OPT page        "^\d{1,9}$"         DEFAULT  "0"
 #############################################################################################
 RES ARRAY users
     RES follow_flag         BOOLEAN
