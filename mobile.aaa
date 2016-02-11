@@ -188,7 +188,7 @@ RES cheer_flag          BOOLEAN
 RES comment_num         INTEGER
 RES gochi_flag          BOOLEAN
 RES gochi_num           INTEGER
-RES memo 		        "^(\n|[^\p{Cntrl}]){1,140}$"
+RES memo 		        "^(\n|[^\p{Cntrl}]){1,1000}$"
 RES movie               "^[0-9_-]+$"
 RES hls_movie           "^http\S+$"
 RES mp4_movie           "^http\S$"
@@ -214,7 +214,7 @@ PAR rest_id 		"^\d{1,9}$"
 PAR movie_name 		"^\d{4}(-\d{2}){5}_\d{1,9}$"
 PAR OPT category_id "^\d{1,9}$"                      DEFAULT "1"
 PAR OPT value  		"^\d{1,9}$"                      DEFAULT "0"
-PAR OPT memo 		"^(\n|[^\p{Cntrl}]){1,140}$"     DEFAULT "none"
+PAR OPT memo 		"^(\n|[^\p{Cntrl}]){1,1000}$"    DEFAULT "none"
 PAR OPT cheer_flag  "^1|0$"                          DEFAULT "0"
 ############################################################################################
 RES post_id 		"^\d{1,9}$"
@@ -228,10 +228,24 @@ PAR post_id 		"^\d{1,9}$"
 
 
 ############################################################################################
+URI /set/post_crash
+############################################################################################
+PAR restname		"^[^\p{Cntrl}]{1,80}$"
+PAR address 		"^[^\p{Cntrl}]{1,100}$"
+PAR movie_name 		"^\d{4}(-\d{2}){5}_\d{1,9}$"
+PAR OPT category_id "^\d{1,9}$"                      DEFAULT "1"
+PAR OPT value  		"^\d{1,9}$"                      DEFAULT "0"
+PAR OPT memo 		"^(\n|[^\p{Cntrl}]){1,1000}$"    DEFAULT "none"
+PAR OPT cheer_flag  "^1|0$"                          DEFAULT "0"
+############################################################################################
+RES post_id 		"^\d{1,9}$"
+
+
+############################################################################################
 URI /set/memo_edit
 ############################################################################################
 PAR post_id         "^\d{1,9}$"
-PAR memo            "^(\n|[^\p{Cntrl}]){1,140}$"
+PAR memo            "^(\n|[^\p{Cntrl}]){1,1000}$"
 ############################################################################################
 
 
@@ -426,7 +440,7 @@ RES ARRAY posts
     RES hls_movie           "^http\S+$"
     RES lat                 FLOAT
     RES lon                 FLOAT
-    RES memo 		        "^(\n|[^\p{Cntrl}]){1,140}$"
+    RES memo 		        "^(\n|[^\p{Cntrl}]){1,1000}$"
     RES movie               "^[0-9_-]+$"
     RES mp4_movie           "^http\S$"
     RES post_date           "^\S{1,20}$"
@@ -461,7 +475,7 @@ RES ARRAY posts
     RES gochi_flag          BOOLEAN
     RES gochi_num           INTEGER
     RES hls_movie           "^http\S+$"
-    RES memo 		        "^(\n|[^\p{Cntrl}]){1,140}$"
+    RES memo 		        "^(\n|[^\p{Cntrl}]){1,1000}$"
     RES movie               "^[0-9_-]+$"
     RES mp4_movie           "^http\S$"
     RES post_date           "^\S{1,20}$"
@@ -482,7 +496,7 @@ URI /get/comment
 PAR post_id         "^\d{1,9}$"
 #############################################################################################
 RES DICT memo
-    RES memo 		        "^(\n|[^\p{Cntrl}]){1,140}$"
+    RES memo 		        "^(\n|[^\p{Cntrl}]){1,1000}$"
     RES post_date           "^\S{1,20}$"
     RES profile_img     	"^http\S{1,2000}"
     RES user_id             "^\d{1,9}$"
