@@ -320,6 +320,8 @@ PAR OPT value_id    "^\d{1,9}$"
 RES ARRAY posts
     RES cheer_flag          BOOLEAN
     RES distance            INTEGER
+    RES lat                 FLOAT
+    RES lon                 FLOAT
     RES gochi_flag          BOOLEAN
     RES movie               "^[0-9_-]+$"
     RES hls_movie           "^http\S+$"
